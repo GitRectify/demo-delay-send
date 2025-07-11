@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Clock, Settings, BarChart3, User, Mail, Zap, Check, ArrowRight, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,11 +13,39 @@ import InEmailPreview from '@/components/InEmailPreview';
 const Index = () => {
   const [currentDelay, setCurrentDelay] = useState(60);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
+
+  // Load theme preference from localStorage on component mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme !== null) {
+      const isDark = savedTheme === 'dark';
+      setIsDarkMode(isDark);
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } else {
+      // If no saved preference, use default (dark mode)
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+  }, []);
 
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    
+    // Save to localStorage
+    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+    
+    // Apply to document
+    if (newTheme) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   };
 
   return (
@@ -29,12 +57,12 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="relative">
-                  <img
+                  <img 
                     src="@/assets/images/email-magic-logo.png"
-                    alt="Email Magic Logo"
+                    alt="Email Magic Logo" 
                     className="w-20 h-8 object-contain"
                   />
-                  {/* <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900"></div> */}
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900"></div>
                 </div>
                 <div>
                   <h1 className="text-xl font-semibold text-slate-900 dark:text-white">SendShield</h1>
