@@ -10,7 +10,7 @@ function App() {
     <div className="popup-container">
       {show && (
         <div className={`popup-content ${show ? 'opacity-100' : 'opacity-0'}`}>
-          <h1>HELLO CRXJS</h1>
+          <h1>Delay Send</h1>
         </div>
       )}
       <button className="toggle-button" onClick={toggle}>
