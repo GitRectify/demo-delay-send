@@ -12,11 +12,13 @@ import InEmailPreview from '@/components/InEmailPreview';
 const Index = () => {
   const [currentDelay, setCurrentDelay] = useState(60);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
-  const [isDelayEnabled, setIsDelayEnabled] = useState(true); // Track delay enabled state
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDelayEnabled, setIsDelayEnabled] = useState(true);
+  const [activeTab, setActiveTab] = useState('settings');
 
-  // Load theme preference from localStorage on component mount
+  // Load ALL state from localStorage on component mount
   useEffect(() => {
+    // Load theme preference
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme !== null) {
       const isDark = savedTheme === 'dark';
@@ -27,9 +29,35 @@ const Index = () => {
         document.documentElement.classList.remove('dark');
       }
     } else {
-      // If no saved preference, use default (dark mode)
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
+    }
+
+    // Load delay enabled state
+    const savedDelayEnabled = localStorage.getItem('delayEnabled');
+    if (savedDelayEnabled !== null) {
+      setIsDelayEnabled(savedDelayEnabled === 'true');
+    }
+
+    // Load delay duration
+    const savedDelayDuration = localStorage.getItem('delayDuration');
+    if (savedDelayDuration !== null) {
+      const duration = parseInt(savedDelayDuration, 10);
+      if (!isNaN(duration)) {
+        setCurrentDelay(duration);
+      }
+    }
+
+    // Load active tab
+    const savedActiveTab = localStorage.getItem('activeTab');
+    if (savedActiveTab !== null) {
+      setActiveTab(savedActiveTab);
+    }
+
+    // Load authentication state
+    const savedAuthState = localStorage.getItem('isAuthenticated');
+    if (savedAuthState !== null) {
+      setIsAuthenticated(savedAuthState === 'true');
     }
   }, []);
 
@@ -46,6 +74,26 @@ const Index = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
+  };
+
+  const handleDelayEnabledChange = (enabled: boolean) => {
+    setIsDelayEnabled(enabled);
+    localStorage.setItem('delayEnabled', enabled.toString());
+  };
+
+  const handleDelayChange = (delay: number) => {
+    setCurrentDelay(delay);
+    localStorage.setItem('delayDuration', delay.toString());
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    localStorage.setItem('activeTab', value);
+  };
+
+  const handleAuthChange = (authenticated: boolean) => {
+    setIsAuthenticated(authenticated);
+    localStorage.setItem('isAuthenticated', authenticated.toString());
   };
 
   const formatDelay = (seconds: number) => {
@@ -137,31 +185,31 @@ const Index = () => {
           </div> */}
 
           {/* Main Content */}
-          <Tabs defaultValue="settings" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm border dark:border-slate-700">
-              <TabsTrigger 
-                value="settings" 
+              <TabsTrigger
+                value="settings"
                 className="flex items-center space-x-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-600 dark:text-slate-400"
               >
                 <Settings className="w-4 h-4" />
                 <span>Settings</span>
               </TabsTrigger>
-              {/* <TabsTrigger 
-                value="outbox" 
+              {/* <TabsTrigger
+                value="outbox"
                 className="flex items-center space-x-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-600 dark:text-slate-400"
               >
                 <Mail className="w-4 h-4" />
                 <span>Outbox</span>
               </TabsTrigger> */}
-              <TabsTrigger 
-                value="analytics" 
+              <TabsTrigger
+                value="analytics"
                 className="flex items-center space-x-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-600 dark:text-slate-400"
               >
                 <BarChart3 className="w-4 h-4" />
                 <span>Analytics</span>
               </TabsTrigger>
-              {/* <TabsTrigger 
-                value="preview" 
+              {/* <TabsTrigger
+                value="preview"
                 className="flex items-center space-x-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-600 dark:text-slate-400"
               >
                 <Zap className="w-4 h-4" />
@@ -170,10 +218,10 @@ const Index = () => {
             </TabsList>
 
             <TabsContent value="settings">
-              <DelaySettings 
-                currentDelay={currentDelay} 
-                onDelayChange={setCurrentDelay}
-                onEnabledChange={setIsDelayEnabled}
+              <DelaySettings
+                currentDelay={currentDelay}
+                onDelayChange={handleDelayChange}
+                onEnabledChange={handleDelayEnabledChange}
               />
             </TabsContent>
 

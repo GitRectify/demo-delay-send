@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, Shield, Zap, Check, ChevronRight, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,19 +12,74 @@ interface DelaySettingsProps {
   onEnabledChange?: (enabled: boolean) => void;
 }
 
-const DelaySettings: React.FC<DelaySettingsProps> = ({ 
-  currentDelay, 
-  onDelayChange, 
-  onEnabledChange 
+const DelaySettings: React.FC<DelaySettingsProps> = ({
+  currentDelay,
+  onDelayChange,
+  onEnabledChange
 }) => {
   const [isEnabled, setIsEnabled] = useState(true);
   const [showMoreSettings, setShowMoreSettings] = useState(false);
+  const [smartWeekendDelays, setSmartWeekendDelays] = useState(false);
+  const [highPriorityBypass, setHighPriorityBypass] = useState(false);
+  const [soundNotifications, setSoundNotifications] = useState(false);
+
+  // Load ALL DelaySettings state from localStorage
+  useEffect(() => {
+    // Load main enabled state from the same key as Index.tsx
+    const savedEnabled = localStorage.getItem('delayEnabled');
+    if (savedEnabled !== null) {
+      setIsEnabled(savedEnabled === 'true');
+    }
+
+    const savedShowMore = localStorage.getItem('delaySettings_showMoreSettings');
+    if (savedShowMore !== null) {
+      setShowMoreSettings(savedShowMore === 'true');
+    }
+
+    const savedWeekendDelays = localStorage.getItem('delaySettings_smartWeekendDelays');
+    if (savedWeekendDelays !== null) {
+      setSmartWeekendDelays(savedWeekendDelays === 'true');
+    }
+
+    const savedPriorityBypass = localStorage.getItem('delaySettings_highPriorityBypass');
+    if (savedPriorityBypass !== null) {
+      setHighPriorityBypass(savedPriorityBypass === 'true');
+    }
+
+    const savedSoundNotifications = localStorage.getItem('delaySettings_soundNotifications');
+    if (savedSoundNotifications !== null) {
+      setSoundNotifications(savedSoundNotifications === 'true');
+    }
+  }, []);
 
   const handleEnabledChange = (enabled: boolean) => {
     setIsEnabled(enabled);
+    // Save to the main localStorage key that Index.tsx uses
+    localStorage.setItem('delayEnabled', enabled.toString());
     if (onEnabledChange) {
       onEnabledChange(enabled);
     }
+  };
+
+  const handleShowMoreToggle = () => {
+    const newValue = !showMoreSettings;
+    setShowMoreSettings(newValue);
+    localStorage.setItem('delaySettings_showMoreSettings', newValue.toString());
+  };
+
+  const handleSmartWeekendChange = (enabled: boolean) => {
+    setSmartWeekendDelays(enabled);
+    localStorage.setItem('delaySettings_smartWeekendDelays', enabled.toString());
+  };
+
+  const handlePriorityBypassChange = (enabled: boolean) => {
+    setHighPriorityBypass(enabled);
+    localStorage.setItem('delaySettings_highPriorityBypass', enabled.toString());
+  };
+
+  const handleSoundNotificationsChange = (enabled: boolean) => {
+    setSoundNotifications(enabled);
+    localStorage.setItem('delaySettings_soundNotifications', enabled.toString());
   };
 
   const presetDelays = [
@@ -117,7 +171,7 @@ const DelaySettings: React.FC<DelaySettingsProps> = ({
       <Card className="border-0 shadow-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm">
         <CardHeader>
           <button
-            onClick={() => setShowMoreSettings(!showMoreSettings)}
+            onClick={handleShowMoreToggle}
             className="flex items-center justify-between w-full text-left hover:bg-slate-50 dark:hover:bg-slate-700 -m-2 p-2 rounded-lg transition-colors"
           >
             <div className="flex items-center space-x-3">
@@ -144,21 +198,30 @@ const DelaySettings: React.FC<DelaySettingsProps> = ({
                   <p className="font-medium text-slate-700 dark:text-slate-300">Smart weekend delays</p>
                   <p className="text-sm text-slate-500 dark:text-slate-400">Extend delay for weekend emails</p>
                 </div>
-                <Switch />
+                <Switch
+                  checked={smartWeekendDelays}
+                  onCheckedChange={handleSmartWeekendChange}
+                />
               </div>
               <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                 <div>
                   <p className="font-medium text-slate-700 dark:text-slate-300">High-priority bypass</p>
                   <p className="text-sm text-slate-500 dark:text-slate-400">Skip delay for urgent emails</p>
                 </div>
-                <Switch />
+                <Switch
+                  checked={highPriorityBypass}
+                  onCheckedChange={handlePriorityBypassChange}
+                />
               </div>
               <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                 <div>
                   <p className="font-medium text-slate-700 dark:text-slate-300">Sound notifications</p>
                   <p className="text-sm text-slate-500 dark:text-slate-400">Audio alerts during delay</p>
                 </div>
-                <Switch />
+                <Switch
+                  checked={soundNotifications}
+                  onCheckedChange={handleSoundNotificationsChange}
+                />
               </div>
             </div>
           </CardContent>
