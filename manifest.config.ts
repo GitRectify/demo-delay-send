@@ -14,8 +14,16 @@ export default defineManifest({
     },
     default_popup: 'src/popup/index.html',
   },
+  permissions: [
+    'activeTab',
+    'storage'
+  ],
+  host_permissions: [
+    "https://mail.google.com/*"
+  ],
   content_scripts: [{
-    js: ['src/content/main.tsx'],
-    matches: ['https://*/*'],
+    js: ['src/content/gmail.tsx'],
+    matches: ['https://mail.google.com/*'],
+    run_at: 'document_end'
   }],
 })
