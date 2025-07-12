@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Shield, Clock, Settings, BarChart3, User, Mail, Zap, Check, ArrowRight, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,7 @@ const Index = () => {
   const [currentDelay, setCurrentDelay] = useState(60);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
+  const [isDelayEnabled, setIsDelayEnabled] = useState(true); // Track delay enabled state
 
   // Load theme preference from localStorage on component mount
   useEffect(() => {
@@ -48,6 +48,11 @@ const Index = () => {
     }
   };
 
+  const formatDelay = (seconds: number) => {
+    if (seconds < 60) return `${seconds}s`;
+    return `${Math.floor(seconds / 60)}m ${seconds % 60}s`.replace(' 0s', '');
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark' : ''}`}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-300">
@@ -57,19 +62,18 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="relative">
-                  <img 
-                    src="@/assets/images/email-magic-logo.png"
-                    alt="Email Magic Logo" 
-                    className="w-20 h-8 object-contain"
+                  <img
+                    src="/images/email-magic-logo.png"
+                    alt="Email Magic Logo"
+                    className="w-12 h-8 object-contain"
                   />
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900"></div>
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-slate-900 dark:text-white">SendShield</h1>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Smart delay protection for Gmail</p>
+                  <h1 className="text-md font-semibold text-slate-900 dark:text-white">Delay Send</h1>
+                  {/* <p className="text-sm text-slate-500 dark:text-slate-400">Smart delay protection for Gmail</p> */}
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -82,9 +86,18 @@ const Index = () => {
                     <Moon className="w-5 h-5 text-slate-600" />
                   )}
                 </Button>
-                <Badge variant="secondary" className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/30">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
-                  Active
+                <Badge 
+                  variant="secondary" 
+                  className={`${
+                    isDelayEnabled 
+                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/30'
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/30'
+                  }`}
+                >
+                  <div className={`w-2 h-2 rounded-full mr-2 ${
+                    isDelayEnabled ? 'bg-emerald-500' : 'bg-red-500'
+                  }`}></div>
+                  {isDelayEnabled ? 'Active' : 'Inactive'}
                 </Badge>
                 <Button variant="ghost" size="sm" className="hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300">
                   <User className="w-4 h-4" />
@@ -96,7 +109,7 @@ const Index = () => {
 
         <div className="max-w-6xl mx-auto px-6 py-8">
           {/* Welcome Section */}
-          <div className="mb-8">
+          {/* <div className="mb-8">
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-600 dark:to-blue-700 rounded-2xl p-8 text-white relative overflow-hidden">
               <div className="absolute inset-0 bg-white/5 [mask-image:linear-gradient(0deg,transparent,black)]"></div>
               <div className="relative">
@@ -121,7 +134,7 @@ const Index = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Main Content */}
           <Tabs defaultValue="settings" className="space-y-6">
@@ -157,7 +170,11 @@ const Index = () => {
             </TabsList>
 
             <TabsContent value="settings">
-              <DelaySettings currentDelay={currentDelay} onDelayChange={setCurrentDelay} />
+              <DelaySettings 
+                currentDelay={currentDelay} 
+                onDelayChange={setCurrentDelay}
+                onEnabledChange={setIsDelayEnabled}
+              />
             </TabsContent>
 
             <TabsContent value="outbox">

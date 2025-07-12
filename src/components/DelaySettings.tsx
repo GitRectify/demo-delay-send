@@ -10,11 +10,23 @@ import { Switch } from '@/components/ui/switch';
 interface DelaySettingsProps {
   currentDelay: number;
   onDelayChange: (delay: number) => void;
+  onEnabledChange?: (enabled: boolean) => void;
 }
 
-const DelaySettings: React.FC<DelaySettingsProps> = ({ currentDelay, onDelayChange }) => {
+const DelaySettings: React.FC<DelaySettingsProps> = ({ 
+  currentDelay, 
+  onDelayChange, 
+  onEnabledChange 
+}) => {
   const [isEnabled, setIsEnabled] = useState(true);
   const [showMoreSettings, setShowMoreSettings] = useState(false);
+
+  const handleEnabledChange = (enabled: boolean) => {
+    setIsEnabled(enabled);
+    if (onEnabledChange) {
+      onEnabledChange(enabled);
+    }
+  };
 
   const presetDelays = [
     { value: 15, label: '15s', description: 'Quick review' },
@@ -46,7 +58,7 @@ const DelaySettings: React.FC<DelaySettingsProps> = ({ currentDelay, onDelayChan
             </div>
             <Switch
               checked={isEnabled}
-              onCheckedChange={setIsEnabled}
+              onCheckedChange={handleEnabledChange}
               className="data-[state=checked]:bg-blue-600"
             />
           </div>
