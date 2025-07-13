@@ -23,63 +23,62 @@ const DelaySettings: React.FC<DelaySettingsProps> = ({
   const [highPriorityBypass, setHighPriorityBypass] = useState(false);
   const [soundNotifications, setSoundNotifications] = useState(false);
 
-  // Load ALL DelaySettings state from localStorage
+  // Load from chrome.storage.local
   useEffect(() => {
-    // Load main enabled state from the same key as Index.tsx
-    const savedEnabled = localStorage.getItem('delayEnabled');
-    if (savedEnabled !== null) {
-      setIsEnabled(savedEnabled === 'true');
-    }
+    chrome.storage.local.get([
+      'delayEnabled',
+      'delaySettings_showMoreSettings',
+      'delaySettings_smartWeekendDelays',
+      'delaySettings_highPriorityBypass',
+      'delaySettings_soundNotifications'
+    ], (result) => {
+      if (result.delayEnabled !== undefined) {
+        setIsEnabled(result.delayEnabled);
+      }
 
-    const savedShowMore = localStorage.getItem('delaySettings_showMoreSettings');
-    if (savedShowMore !== null) {
-      setShowMoreSettings(savedShowMore === 'true');
-    }
+      if (result.delaySettings_showMoreSettings !== undefined) {
+        setShowMoreSettings(result.delaySettings_showMoreSettings);
+      }
 
-    const savedWeekendDelays = localStorage.getItem('delaySettings_smartWeekendDelays');
-    if (savedWeekendDelays !== null) {
-      setSmartWeekendDelays(savedWeekendDelays === 'true');
-    }
+      if (result.delaySettings_smartWeekendDelays !== undefined) {
+        setSmartWeekendDelays(result.delaySettings_smartWeekendDelays);
+      }
 
-    const savedPriorityBypass = localStorage.getItem('delaySettings_highPriorityBypass');
-    if (savedPriorityBypass !== null) {
-      setHighPriorityBypass(savedPriorityBypass === 'true');
-    }
+      if (result.delaySettings_highPriorityBypass !== undefined) {
+        setHighPriorityBypass(result.delaySettings_highPriorityBypass);
+      }
 
-    const savedSoundNotifications = localStorage.getItem('delaySettings_soundNotifications');
-    if (savedSoundNotifications !== null) {
-      setSoundNotifications(savedSoundNotifications === 'true');
-    }
+      if (result.delaySettings_soundNotifications !== undefined) {
+        setSoundNotifications(result.delaySettings_soundNotifications);
+      }
+    });
   }, []);
 
   const handleEnabledChange = (enabled: boolean) => {
     setIsEnabled(enabled);
-    // Save to the main localStorage key that Index.tsx uses
-    localStorage.setItem('delayEnabled', enabled.toString());
-    if (onEnabledChange) {
-      onEnabledChange(enabled);
-    }
+    chrome.storage.local.set({ delayEnabled: enabled });
+    if (onEnabledChange) onEnabledChange(enabled);
   };
 
   const handleShowMoreToggle = () => {
     const newValue = !showMoreSettings;
     setShowMoreSettings(newValue);
-    localStorage.setItem('delaySettings_showMoreSettings', newValue.toString());
+    chrome.storage.local.set({ delaySettings_showMoreSettings: newValue });
   };
 
   const handleSmartWeekendChange = (enabled: boolean) => {
     setSmartWeekendDelays(enabled);
-    localStorage.setItem('delaySettings_smartWeekendDelays', enabled.toString());
+    chrome.storage.local.set({ delaySettings_smartWeekendDelays: enabled });
   };
 
   const handlePriorityBypassChange = (enabled: boolean) => {
     setHighPriorityBypass(enabled);
-    localStorage.setItem('delaySettings_highPriorityBypass', enabled.toString());
+    chrome.storage.local.set({ delaySettings_highPriorityBypass: enabled });
   };
 
   const handleSoundNotificationsChange = (enabled: boolean) => {
     setSoundNotifications(enabled);
-    localStorage.setItem('delaySettings_soundNotifications', enabled.toString());
+    chrome.storage.local.set({ delaySettings_soundNotifications: enabled });
   };
 
   const presetDelays = [

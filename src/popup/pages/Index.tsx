@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Clock, Settings, BarChart3, User, Mail, Zap, Check, ArrowRight, Sun, Moon } from 'lucide-react';
+import {
+  Shield, Clock, Settings, BarChart3, User, Mail, Zap, Check, ArrowRight, Sun, Moon
+} from 'lucide-react';
 import { Button } from '@/popup/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/popup/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/popup/components/ui/tabs';
@@ -16,84 +18,72 @@ const Index = () => {
   const [isDelayEnabled, setIsDelayEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState('settings');
 
-  // Load ALL state from localStorage on component mount
+  // Load from chrome.storage.local on mount
   useEffect(() => {
-    // Load theme preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme !== null) {
-      const isDark = savedTheme === 'dark';
+    (async () => {
+      const result = await chrome.storage.local.get([
+        'theme',
+        'delayEnabled',
+        'delayDuration',
+        'activeTab',
+        'isAuthenticated',
+      ]);
+
+      // Theme
+      const isDark = result.theme === 'dark' || !result.theme;
       setIsDarkMode(isDark);
-      if (isDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
+      document.documentElement.classList.toggle('dark', isDark);
+      if (!result.theme) {
+        chrome.storage.local.set({ theme: 'dark' });
       }
-    } else {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    }
 
-    // Load delay enabled state
-    const savedDelayEnabled = localStorage.getItem('delayEnabled');
-    if (savedDelayEnabled !== null) {
-      setIsDelayEnabled(savedDelayEnabled === 'true');
-    }
-
-    // Load delay duration
-    const savedDelayDuration = localStorage.getItem('delayDuration');
-    if (savedDelayDuration !== null) {
-      const duration = parseInt(savedDelayDuration, 10);
-      if (!isNaN(duration)) {
-        setCurrentDelay(duration);
+      // Delay enabled
+      if (result.delayEnabled !== undefined) {
+        setIsDelayEnabled(result.delayEnabled);
       }
-    }
 
-    // Load active tab
-    const savedActiveTab = localStorage.getItem('activeTab');
-    if (savedActiveTab !== null) {
-      setActiveTab(savedActiveTab);
-    }
+      // Delay duration
+      if (typeof result.delayDuration === 'number') {
+        setCurrentDelay(result.delayDuration);
+      }
 
-    // Load authentication state
-    const savedAuthState = localStorage.getItem('isAuthenticated');
-    if (savedAuthState !== null) {
-      setIsAuthenticated(savedAuthState === 'true');
-    }
+      // Active tab
+      if (typeof result.activeTab === 'string') {
+        setActiveTab(result.activeTab);
+      }
+
+      // Auth state
+      if (typeof result.isAuthenticated === 'boolean') {
+        setIsAuthenticated(result.isAuthenticated);
+      }
+    })();
   }, []);
 
-  const toggleTheme = () => {
+  const toggleTheme = async () => {
     const newTheme = !isDarkMode;
     setIsDarkMode(newTheme);
-
-    // Save to localStorage
-    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-
-    // Apply to document
-    if (newTheme) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', newTheme);
+    await chrome.storage.local.set({ theme: newTheme ? 'dark' : 'light' });
   };
 
-  const handleDelayEnabledChange = (enabled: boolean) => {
+  const handleDelayEnabledChange = async (enabled: boolean) => {
     setIsDelayEnabled(enabled);
-    localStorage.setItem('delayEnabled', enabled.toString());
+    await chrome.storage.local.set({ delayEnabled: enabled });
   };
 
-  const handleDelayChange = (delay: number) => {
+  const handleDelayChange = async (delay: number) => {
     setCurrentDelay(delay);
-    localStorage.setItem('delayDuration', delay.toString());
+    await chrome.storage.local.set({ delayDuration: delay });
   };
 
-  const handleTabChange = (value: string) => {
+  const handleTabChange = async (value: string) => {
     setActiveTab(value);
-    localStorage.setItem('activeTab', value);
+    await chrome.storage.local.set({ activeTab: value });
   };
 
-  const handleAuthChange = (authenticated: boolean) => {
+  const handleAuthChange = async (authenticated: boolean) => {
     setIsAuthenticated(authenticated);
-    localStorage.setItem('isAuthenticated', authenticated.toString());
+    await chrome.storage.local.set({ isAuthenticated: authenticated });
   };
 
   const formatDelay = (seconds: number) => {
@@ -109,17 +99,8 @@ const Index = () => {
           <div className="max-w-6xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                {/* <div className="relative"> */}
-                  <img
-                    src="/images/email-magic-logo.png"
-                    alt="Email Magic Logo"
-                    className="w-12 h-8 object-contain"
-                  />
-                {/* </div> */}
-                <div>
-                  <h1 className="text-md font-semibold text-slate-900 dark:text-white">Delay Send</h1>
-                  {/* <p className="text-sm text-slate-500 dark:text-slate-400">Smart delay protection for Gmail</p> */}
-                </div>
+                <img src="/images/email-magic-logo.png" alt="Email Magic Logo" className="w-12 h-8 object-contain" />
+                <h1 className="text-md font-semibold text-slate-900 dark:text-white">Delay Send</h1>
               </div>
               <div className="flex items-center space-x-1">
                 <Badge
@@ -141,11 +122,7 @@ const Index = () => {
                   onClick={toggleTheme}
                   className="hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                 >
-                  {isDarkMode ? (
-                    <Sun className="w-5 h-5 text-amber-500" />
-                  ) : (
-                    <Moon className="w-5 h-5 text-slate-600" />
-                  )}
+                  {isDarkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-slate-600" />}
                 </Button>
                 <Button variant="ghost" size="sm" className="hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300">
                   <User className="w-4 h-4" />
