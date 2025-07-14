@@ -8,18 +8,19 @@ import {
   GmailUtils,
 } from "../utils/gmailSelectors";
 
-interface DelayedEmail {
+interface DelayingEmail {
   id: string;
   content: string;
   recipient: string;
   subject: string;
   delayTime: number;
+  remainingTime: number;
   startTime: number;
-  element: HTMLElement;
+  originalButton: HTMLElement;
 }
 
 const GmailIntegration: React.FC = () => {
-  const [delayedEmails, setDelayedEmails] = useState<DelayedEmail[]>([]);
+  const [delayingEmails, setDelayingEmails] = useState<DelayingEmail[]>([]);
   const [delayDuration, setDelayDuration] = useState(60); // 60 seconds default
   const observerRef = useRef<MutationObserver | null>(null);
 
@@ -31,6 +32,12 @@ const GmailIntegration: React.FC = () => {
     chrome.storage.local.get(["delayDuration"], (result) => {
       if (result.delayDuration) {
         setDelayDuration(result.delayDuration);
+      }
+    });
+
+    chrome.storage.sync.get(["delayingEmails"], (result) => {
+      if (result.delayingEmails) {
+        setDelayingEmails(result.delayingEmails);
       }
     });
 
@@ -89,7 +96,7 @@ const GmailIntegration: React.FC = () => {
 
     button.dataset.emailMagicIntercepted = "true";
 
-    const originalClick = button.onclick;
+    const originalOnClick = button.onclick;
     const originalAddEventListener = button.addEventListener;
 
     // Override click event
@@ -100,7 +107,7 @@ const GmailIntegration: React.FC = () => {
       // Get email data
       const emailData = extractEmailData();
       if (emailData) {
-        delayEmail(emailData, button);
+        addDelayEmail(emailData, button);
       }
 
       return false;
@@ -116,7 +123,7 @@ const GmailIntegration: React.FC = () => {
 
           const emailData = extractEmailData();
           if (emailData) {
-            delayEmail(emailData, button);
+            addDelayEmail(emailData, button);
           }
 
           return false;
@@ -150,26 +157,27 @@ const GmailIntegration: React.FC = () => {
   };
 
   // Delay email sending
-  const delayEmail = (emailData: any, originalButton: HTMLElement) => {
+  const addDelayEmail = (emailData: any, originalButton: HTMLElement) => {
     const emailId = `email-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 9)}`;
 
-    const delayedEmail: DelayedEmail = {
+    const delayingEmail: DelayingEmail = {
       id: emailId,
       content: emailData.content,
       recipient: emailData.recipient,
       subject: emailData.subject,
       delayTime: delayDuration,
+      remainingTime: delayDuration,
       startTime: Date.now(),
-      element: originalButton,
+      originalButton: originalButton,
     };
 
-    setDelayedEmails((prev) => [...prev, delayedEmail]); // React gives `prev` = current delayedEmails
+    setDelayingEmails((prev) => [...prev, delayingEmail]); // React gives `prev` = current delayingEmails
 
     // Start countdown
     const countdown = setInterval(() => {
-      setDelayedEmails((prev) => {
+      setDelayingEmails((prev) => {
         const updated = prev
           .map((email) => {
             if (email.id === emailId) {
@@ -183,11 +191,11 @@ const GmailIntegration: React.FC = () => {
                 return null;
               }
 
-              return { ...email, delayTime: remaining };
+              return { ...email, remainingTime: remaining };
             }
             return email;
           })
-          .filter(Boolean) as DelayedEmail[];
+          .filter(Boolean) as DelayingEmail[];
 
         return updated;
       });
@@ -195,17 +203,17 @@ const GmailIntegration: React.FC = () => {
   };
 
   // Send the email after delay
-  const sendEmail = (email: DelayedEmail, originalButton: HTMLElement) => {
+  const sendEmail = (trueEmail: DelayingEmail, originalButton: HTMLElement) => {
     try {
       // Restore original button functionality
-      delete originalButton.dataset.emailMagicIntercepted;
+      delete trueEmail.originalButton.dataset.emailMagicIntercepted;
 
       // Trigger the original send action
-      originalButton.click();
+      trueEmail.originalButton.click();
 
       // Update stats
       chrome.storage.sync.get(["emailStats"], (result) => {
-        const stats = result.emailStats || { delayed: 0, touched: 0, edited: 0 };
+        const stats = result.emailStats || { delayed: 0, canceled: 0, edited: 0 };
         stats.delayed += 1;
         chrome.storage.sync.set({ emailStats: stats });
       });
@@ -218,12 +226,12 @@ const GmailIntegration: React.FC = () => {
 
   // Cancel delayed email
   const cancelEmail = (emailId: string) => {
-    setDelayedEmails((prev) => prev.filter((email) => email.id !== emailId));
+    setDelayingEmails((prev) => prev.filter((email) => email.id !== emailId));
 
     // Update stats
     chrome.storage.sync.get(["emailStats"], (result) => {
-      const stats = result.emailStats || { delayed: 0, touched: 0, edited: 0 };
-      stats.touched += 1;
+      const stats = result.emailStats || { delayed: 0, canceled: 0, edited: 0 };
+      stats.canceled += 1;
       chrome.storage.sync.set({ emailStats: stats });
     });
   };
@@ -236,7 +244,7 @@ const GmailIntegration: React.FC = () => {
 
     // Update stats
     chrome.storage.sync.get(["emailStats"], (result) => {
-      const stats = result.emailStats || { delayed: 0, touched: 0, edited: 0 };
+      const stats = result.emailStats || { delayed: 0, canceled: 0, edited: 0 };
       stats.edited += 1;
       chrome.storage.sync.set({ emailStats: stats });
     });
@@ -244,12 +252,12 @@ const GmailIntegration: React.FC = () => {
 
   return (
     <div className="container">
-      {delayedEmails.map((email) => (
+      {delayingEmails.map((email) => (
         <div key={email.id} className="indicator">
           <div className="delay-content">
             <Shield size={16} style={{ color: "#3b82f6" }} />
             <span style={{ fontWeight: 600, color: "#1f2937", fontSize: "14px" }}>
-              {Math.ceil(email.delayTime)}s
+              {Math.ceil(email.remainingTime)}s
             </span>
             <div className="delay-actions">
               <button

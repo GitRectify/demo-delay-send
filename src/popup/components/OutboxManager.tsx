@@ -6,7 +6,7 @@ import { Button } from '@/popup/components/ui/button';
 import { Badge } from '@/popup/components/ui/badge';
 import { Separator } from '@/popup/components/ui/separator';
 
-interface DelayedEmail {
+interface DelayingEmail {
   id: string;
   to: string;
   subject: string;
@@ -17,7 +17,7 @@ interface DelayedEmail {
 }
 
 const OutboxManager: React.FC = () => {
-  const [delayedEmails, setDelayedEmails] = useState<DelayedEmail[]>([
+  const [delayingEmails, setDelayingEmails] = useState<DelayingEmail[]>([
     {
       id: '1',
       to: 'john.doe@company.com',
@@ -55,19 +55,19 @@ const OutboxManager: React.FC = () => {
   };
 
   const handleEdit = (id: string) => {
-    setDelayedEmails(emails => 
-      emails.map(email => 
+    setDelayingEmails(emails =>
+      emails.map(email =>
         email.id === id ? { ...email, touches: email.touches + 1 } : email
       )
     );
   };
 
   const handleCancel = (id: string) => {
-    setDelayedEmails(emails => emails.filter(email => email.id !== id));
+    setDelayingEmails(emails => emails.filter(email => email.id !== id));
   };
 
   const handleSendNow = (id: string) => {
-    setDelayedEmails(emails => emails.filter(email => email.id !== id));
+    setDelayingEmails(emails => emails.filter(email => email.id !== id));
   };
 
   return (
@@ -86,7 +86,7 @@ const OutboxManager: React.FC = () => {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{delayedEmails.length}</div>
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{delayingEmails.length}</div>
               <div className="text-sm text-blue-600 dark:text-blue-400">Delayed emails</div>
             </div>
           </div>
@@ -128,7 +128,7 @@ const OutboxManager: React.FC = () => {
 
       {/* Delayed Emails List */}
       <div className="space-y-4">
-        {delayedEmails.length === 0 ? (
+        {delayingEmails.length === 0 ? (
           <Card className="border-0 shadow-sm">
             <CardContent className="p-12 text-center">
               <Mail className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
@@ -137,7 +137,7 @@ const OutboxManager: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          delayedEmails.map((email) => (
+          delayingEmails.map((email) => (
             <Card key={email.id} className="border-0 shadow-sm bg-white dark:bg-slate-800 hover:shadow-md dark:hover:shadow-slate-700/50 transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -159,15 +159,15 @@ const OutboxManager: React.FC = () => {
                         </Badge>
                       )}
                     </div>
-                    
+
                     <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-2 truncate">
                       {email.subject}
                     </h3>
-                    
+
                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 line-clamp-2">
                       {email.preview}
                     </p>
-                    
+
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2">
                         <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
@@ -177,7 +177,7 @@ const OutboxManager: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2 ml-4">
                     <Button
                       variant="ghost"

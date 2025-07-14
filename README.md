@@ -127,7 +127,7 @@ const interceptSendButton = (button: HTMLElement) => {
     
     const emailData = extractEmailData()
     if (emailData) {
-      delayEmail(emailData, button)
+      addDelayEmail(emailData, button)
     }
     
     return false

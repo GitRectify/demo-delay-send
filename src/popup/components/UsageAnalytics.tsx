@@ -213,7 +213,7 @@ const UsageAnalytics: React.FC = () => {
                 <div>
                   <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">156</div>
                   <div className="text-sm text-emerald-600 dark:text-emerald-400">Emails edited after delay</div>
-                  <div className="text-xs text-emerald-500 dark:text-emerald-500 mt-1">12.5% touched before sending</div>
+                  <div className="text-xs text-emerald-500 dark:text-emerald-500 mt-1">12.5% canceled before sending</div>
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">$24K</div>
