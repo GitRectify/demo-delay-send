@@ -108,8 +108,10 @@ const GmailIntegration: React.FC = () => {
       const emailData = extractEmailData();
       if (emailData) {
         addDelayEmail(emailData, button);
+      } else {
+        // If empty, allow default send (or do nothing)
+        if (originalOnClick) originalOnClick.call(button, e);
       }
-
       return false;
     };
 
@@ -137,11 +139,12 @@ const GmailIntegration: React.FC = () => {
   // Extract email data from Gmail compose window
   const extractEmailData = () => {
     try {
-      // Use the utility functions to extract data
       const recipient = GmailUtils.getRecipient();
       const subject = GmailUtils.getSubject();
       const content = GmailUtils.getEmailContent();
-
+      // If all fields are empty, treat as empty compose
+      // if (!recipient) return null;
+      // if (!subject && !content) return null;
       return {
         recipient,
         subject,

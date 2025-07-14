@@ -81,6 +81,11 @@ const DelaySettings: React.FC<DelaySettingsProps> = ({
     chrome.storage.local.set({ delaySettings_soundNotifications: enabled });
   };
 
+  const handleDelayChange = (delay: number) => {
+    onDelayChange(delay);
+    chrome.storage.local.set({ delayDuration: delay });
+  };
+
   const presetDelays = [
     { value: 15, label: '15s', description: 'Quick review' },
     { value: 30, label: '30s', description: 'Standard' },
@@ -131,7 +136,7 @@ const DelaySettings: React.FC<DelaySettingsProps> = ({
               {presetDelays.map((preset) => (
                 <button
                   key={preset.value}
-                  onClick={() => onDelayChange(preset.value)}
+                  onClick={() => handleDelayChange(preset.value)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105 ${
                     currentDelay === preset.value
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
@@ -151,7 +156,7 @@ const DelaySettings: React.FC<DelaySettingsProps> = ({
               </div>
               <Slider
                 value={[currentDelay]}
-                onValueChange={(value) => onDelayChange(value[0])}
+                onValueChange={(value) => handleDelayChange(value[0])}
                 max={300}
                 min={5}
                 step={5}
