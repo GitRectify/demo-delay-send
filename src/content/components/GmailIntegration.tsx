@@ -20,17 +20,17 @@ interface DelayedEmail {
 
 const GmailIntegration: React.FC = () => {
   const [delayedEmails, setDelayedEmails] = useState<DelayedEmail[]>([]);
-  const [defaultDelay, setDefaultDelay] = useState(60); // 60 seconds default
+  const [delayDuration, setDelayDuration] = useState(60); // 60 seconds default
   const observerRef = useRef<MutationObserver | null>(null);
 
   // Initialize Gmail integration
   useEffect(() => {
-    console.log("[Email Magic: SendShield] Initializing Gmail integration");
+    console.log("[Email Magic: Delay Send] Initializing Gmail integration");
 
     // Load settings from storage
-    chrome.storage.sync.get(["defaultDelay"], (result) => {
-      if (result.defaultDelay) {
-        setDefaultDelay(result.defaultDelay);
+    chrome.storage.local.get(["delayDuration"], (result) => {
+      if (result.delayDuration) {
+        setDelayDuration(result.delayDuration);
       }
     });
 
@@ -142,7 +142,7 @@ const GmailIntegration: React.FC = () => {
       };
     } catch (error) {
       console.error(
-        "[Email Magic: SendShield] Error extracting email data:",
+        "[Email Magic: Delay Send] Error extracting email data:",
         error
       );
       return null;
@@ -160,12 +160,12 @@ const GmailIntegration: React.FC = () => {
       content: emailData.content,
       recipient: emailData.recipient,
       subject: emailData.subject,
-      delayTime: defaultDelay,
+      delayTime: delayDuration,
       startTime: Date.now(),
       element: originalButton,
     };
 
-    setDelayedEmails((prev) => [...prev, delayedEmail]);
+    setDelayedEmails((prev) => [...prev, delayedEmail]); // React gives `prev` = current delayedEmails
 
     // Start countdown
     const countdown = setInterval(() => {
@@ -192,13 +192,6 @@ const GmailIntegration: React.FC = () => {
         return updated;
       });
     }, 100);
-
-    // Store interaction data
-    chrome.storage.local.get(["emailStats"], (result) => {
-      const stats = result.emailStats || { delayed: 0, touched: 0, edited: 0 };
-      stats.delayed += 1;
-      chrome.storage.local.set({ emailStats: stats });
-    });
   };
 
   // Send the email after delay
@@ -210,9 +203,16 @@ const GmailIntegration: React.FC = () => {
       // Trigger the original send action
       originalButton.click();
 
-      console.log("[Email Magic: SendShield] Email sent after delay");
+      // Update stats
+      chrome.storage.sync.get(["emailStats"], (result) => {
+        const stats = result.emailStats || { delayed: 0, touched: 0, edited: 0 };
+        stats.delayed += 1;
+        chrome.storage.sync.set({ emailStats: stats });
+      });
+
+      console.log("[Email Magic: Delay Send] Email sent after delay");
     } catch (error) {
-      console.error("[Email Magic: SendShield] Error sending email:", error);
+      console.error("[Email Magic: Delay Send] Error sending email:", error);
     }
   };
 
@@ -221,10 +221,10 @@ const GmailIntegration: React.FC = () => {
     setDelayedEmails((prev) => prev.filter((email) => email.id !== emailId));
 
     // Update stats
-    chrome.storage.local.get(["emailStats"], (result) => {
+    chrome.storage.sync.get(["emailStats"], (result) => {
       const stats = result.emailStats || { delayed: 0, touched: 0, edited: 0 };
       stats.touched += 1;
-      chrome.storage.local.set({ emailStats: stats });
+      chrome.storage.sync.set({ emailStats: stats });
     });
   };
 
@@ -235,138 +235,45 @@ const GmailIntegration: React.FC = () => {
     cancelEmail(emailId);
 
     // Update stats
-    chrome.storage.local.get(["emailStats"], (result) => {
+    chrome.storage.sync.get(["emailStats"], (result) => {
       const stats = result.emailStats || { delayed: 0, touched: 0, edited: 0 };
       stats.edited += 1;
-      chrome.storage.local.set({ emailStats: stats });
+      chrome.storage.sync.set({ emailStats: stats });
     });
   };
 
-  const containerStyle: React.CSSProperties = {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    zIndex: 10000,
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  };
-
-  const indicatorStyle: React.CSSProperties = {
-    background: "white",
-    border: "1px solid #e1e5e9",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-    padding: "16px",
-    marginBottom: "12px",
-    minWidth: "280px",
-    backdropFilter: "blur(10px)",
-    animation: "slideIn 0.3s ease-out",
-  };
-
-  const delayContentStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    marginBottom: "8px",
-  };
-
-  const delayActionsStyle: React.CSSProperties = {
-    display: "flex",
-    gap: "4px",
-    marginLeft: "auto",
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    background: "none",
-    border: "none",
-    padding: "4px",
-    borderRadius: "4px",
-    cursor: "pointer",
-    color: "#6b7280",
-    transition: "all 0.2s",
-  };
-
-  const emailPreviewStyle: React.CSSProperties = {
-    fontSize: "12px",
-    color: "#6b7280",
-    lineHeight: 1.4,
-  };
-
-  const emailTextStyle: React.CSSProperties = {
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  };
-
   return (
-    <div style={containerStyle}>
+    <div className="container">
       {delayedEmails.map((email) => (
-        <div key={email.id} style={indicatorStyle}>
-          <div style={delayContentStyle}>
+        <div key={email.id} className="indicator">
+          <div className="delay-content">
             <Shield size={16} style={{ color: "#3b82f6" }} />
-            <span
-              style={{
-                fontWeight: 600,
-                color: "#1f2937",
-                fontSize: "14px",
-              }}
-            >
+            <span style={{ fontWeight: 600, color: "#1f2937", fontSize: "14px" }}>
               {Math.ceil(email.delayTime)}s
             </span>
-            <div style={delayActionsStyle}>
+            <div className="delay-actions">
               <button
                 onClick={() => editEmail(email.id)}
-                style={buttonStyle}
+                className="button edit"
                 title="Edit email"
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#f3f4f6";
-                  e.currentTarget.style.color = "#3b82f6";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "none";
-                  e.currentTarget.style.color = "#6b7280";
-                }}
               >
                 <Clock size={14} />
               </button>
               <button
                 onClick={() => cancelEmail(email.id)}
-                style={buttonStyle}
+                className="button cancel"
                 title="Cancel send"
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#fef2f2";
-                  e.currentTarget.style.color = "#ef4444";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "none";
-                  e.currentTarget.style.color = "#6b7280";
-                }}
               >
                 <X size={14} />
               </button>
             </div>
           </div>
-          <div style={emailPreviewStyle}>
-            <div style={emailTextStyle}>To: {email.recipient}</div>
-            <div style={emailTextStyle}>Subject: {email.subject}</div>
+          <div className="email-preview">
+            <div className="email-text">To: {email.recipient}</div>
+            <div className="email-text">Subject: {email.subject}</div>
           </div>
         </div>
       ))}
-
-      <style>
-        {`
-          @keyframes slideIn {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}
-      </style>
     </div>
   );
 };

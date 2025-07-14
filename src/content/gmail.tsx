@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import GmailIntegration from './components/GmailIntegration'
+import "./Content.css"
 
 console.log('[Email Magic: Delay Send] Gmail integration loaded')
 
