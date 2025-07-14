@@ -1,4 +1,4 @@
-# Email Magic: SendShield
+# Email Magic: Delay Send
 
 A Chrome Extension that provides smart email delay protection for Gmail, preventing rushed decisions and communication mistakes.
 
@@ -194,8 +194,8 @@ const extractEmailData = () => {
 ### Debug Mode
 Enable debug logging by opening the browser console and looking for:
 ```
-[Email Magic: SendShield] Gmail integration loaded
-[Email Magic: SendShield] Initializing Gmail integration
+[Email Magic: Delay Send] Gmail integration loaded
+[Email Magic: Delay Send] Initializing Gmail integration
 ```
 
 ## Contributing
