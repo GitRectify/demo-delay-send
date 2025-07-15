@@ -66,9 +66,9 @@ const GmailIntegration: React.FC = () => {
           if (
             button instanceof HTMLElement &&
             isInsideComposeWindow(button) &&
-            !button.dataset.Email MagicHandled
+            !button.dataset.emailMagicHandled
           ) {
-            button.dataset.Email MagicHandled = "true";
+            button.dataset.emailMagicHandled = "true";
             attachDelayHandler(button);
           }
         });
@@ -189,7 +189,7 @@ const GmailIntegration: React.FC = () => {
         email.originalButton.removeEventListener("click", email.noopClickHandler, true);
         email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
       }
-      delete email.originalButton.dataset.Email MagicHandled;
+      delete email.originalButton.dataset.emailMagicHandled;
 
       // Dispatch a real click event
       const clickEvent = new MouseEvent("click", {
