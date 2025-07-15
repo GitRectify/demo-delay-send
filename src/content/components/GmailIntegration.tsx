@@ -17,7 +17,8 @@ interface DelayingEmail {
   remainingTime: number;
   startTime: number;
   originalButton: HTMLElement;
-  originalClickHandler?: (e: Event) => void;
+  noopClickHandler?: (e: Event) => void;
+  delayClickHandler?: (e: Event) => void;
 }
 
 const GmailIntegration: React.FC = () => {
@@ -47,7 +48,10 @@ const GmailIntegration: React.FC = () => {
   const isInsideComposeWindow = (button: HTMLElement): boolean => {
     let el: HTMLElement | null = button;
     while (el) {
-      if (el.matches && GmailSelectors.composeWindow.some(sel => el.matches(sel))) {
+      if (
+        el.matches &&
+        GmailSelectors.composeWindow.some((sel) => el.matches(sel))
+      ) {
         return true;
       }
       el = el.parentElement;
@@ -59,7 +63,10 @@ const GmailIntegration: React.FC = () => {
     const observer = new MutationObserver(() => {
       GmailSelectors.sendButton.forEach((selector) => {
         document.querySelectorAll(selector).forEach((button) => {
-          if (button instanceof HTMLElement && !button.dataset.emailMagicHandled) {
+          if (
+            button instanceof HTMLElement &&
+            !button.dataset.emailMagicHandled
+          ) {
             button.dataset.emailMagicHandled = "true";
             attachDelayHandler(button);
           }
@@ -72,7 +79,7 @@ const GmailIntegration: React.FC = () => {
   };
 
   const attachDelayHandler = (button: HTMLElement) => {
-    const handler = (e: Event) => {
+    const delayHandler = (e: Event) => {
       const emailData = extractEmailData();
       if (emailData) {
         // Only handle keyboard events if they match expected keys
@@ -91,27 +98,27 @@ const GmailIntegration: React.FC = () => {
         e.stopPropagation();
 
         // Remove our custom click handler
-        button.removeEventListener("click", handler, true);
-        button.removeEventListener("keydown", handler, true);
+        button.removeEventListener("click", delayHandler, true);
+        button.removeEventListener("keydown", delayHandler, true);
 
         // Replace with empty handler to neutralize button
-        const noop = (e: Event) => {
+        const noopHandler = (e: Event) => {
           e.preventDefault();
           e.stopPropagation();
         };
 
-        button.addEventListener("click", noop, true);
-        button.addEventListener("keydown", noop, true);
-        button.innerText = "Delaying..."
+        button.addEventListener("click", noopHandler, true);
+        button.addEventListener("keydown", noopHandler, true);
+        button.innerText = "Delaying...";
 
-        addDelayEmail(emailData, button, noop);
+        addDelayEmail(emailData, button, noopHandler, delayHandler);
       }
     };
 
     // Mouse click
-    button.addEventListener("click", handler, true);
+    button.addEventListener("click", delayHandler, true);
     // Keyboard: Enter, Space, Ctrl+Enter
-    button.addEventListener("keydown", handler, true);
+    button.addEventListener("keydown", delayHandler, true);
   };
 
   const extractEmailData = () => {
@@ -126,7 +133,12 @@ const GmailIntegration: React.FC = () => {
     }
   };
 
-  const addDelayEmail = (emailData: any, originalButton: HTMLElement, handler: EventListener) => {
+  const addDelayEmail = (
+    emailData: any,
+    originalButton: HTMLElement,
+    noopHandler: EventListener,
+    delayHandler: EventListener
+  ) => {
     const emailId = `email-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
 
@@ -137,14 +149,15 @@ const GmailIntegration: React.FC = () => {
       subject: emailData.subject,
       delayTime: delayDuration,
       remainingTime: delayDuration,
-      startTime,
-      originalButton,
-      originalClickHandler: handler,
+      startTime: startTime,
+      originalButton: originalButton,
+      noopClickHandler: noopHandler,
+      delayClickHandler: delayHandler,
     };
 
     setDelayingEmails((prev) => [...prev, delayingEmail]);
 
-    chrome.storage.sync.set({delayingEmails: delayingEmails});
+    chrome.storage.sync.set({ delayingEmails: delayingEmails });
 
     const countdown = setInterval(() => {
       setDelayingEmails((prev) => {
@@ -171,9 +184,9 @@ const GmailIntegration: React.FC = () => {
   const sendEmail = (email: DelayingEmail) => {
     try {
       // Remove our handler so we don't intercept our own send
-      if (email.originalClickHandler) {
-        email.originalButton.removeEventListener("click", email.originalClickHandler, true);
-        email.originalButton.removeEventListener("keydown", email.originalClickHandler, true);
+      if (email.noopClickHandler) {
+        email.originalButton.removeEventListener("click", email.noopClickHandler, true);
+        email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
       }
       delete email.originalButton.dataset.emailMagicHandled;
 
@@ -185,7 +198,7 @@ const GmailIntegration: React.FC = () => {
       });
       email.originalButton.dispatchEvent(clickEvent);
 
-      email.originalButton.innerText = "Send"
+      email.originalButton.innerText = "Send";
 
       // Stats, etc...
       chrome.storage.sync.get(["emailStats"], (result) => {
@@ -200,24 +213,56 @@ const GmailIntegration: React.FC = () => {
     }
   };
 
-  const cancelEmail = (emailId: string) => {
-    setDelayingEmails((prev) => prev.filter((email) => email.id !== emailId));
+  const cancelEmail = (email: DelayingEmail) => {
+    try {
+      if (email.noopClickHandler) {
+        email.originalButton.removeEventListener("click", email.noopClickHandler, true);
+        email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
+      }
+      if (email.delayClickHandler) {
+        email.originalButton.addEventListener("click", email.delayClickHandler, true);
+        email.originalButton.addEventListener("keydown", email.delayClickHandler, true);
+      }
+      email.originalButton.innerText = "Send";
 
-    chrome.storage.sync.get(["emailStats"], (result) => {
+      setDelayingEmails((prev) =>
+        prev.filter((dEmail) => dEmail.id !== email.id)
+      );
+
+      chrome.storage.sync.get(["emailStats"], (result) => {
       const stats = result.emailStats || { delayed: 0, canceled: 0, edited: 0 };
-      stats.canceled += 1;
-      chrome.storage.sync.set({ emailStats: stats });
-    });
+        stats.canceled += 1;
+        chrome.storage.sync.set({ emailStats: stats });
+      });
+    } catch (error) {
+      console.error("[EmailMagic] Error canceling email:", error);
+    }
   };
 
-  const editEmail = (emailId: string) => {
-    cancelEmail(emailId);
+  const editEmail = (email: DelayingEmail) => {
+    try {
+      if (email.noopClickHandler) {
+        email.originalButton.removeEventListener("click", email.noopClickHandler, true);
+        email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
+      }
+      if (email.delayClickHandler) {
+        email.originalButton.addEventListener("click", email.delayClickHandler, true);
+        email.originalButton.addEventListener("keydown", email.delayClickHandler, true);
+      }
+      email.originalButton.innerText = "Send";
 
-    chrome.storage.sync.get(["emailStats"], (result) => {
+      setDelayingEmails((prev) =>
+        prev.filter((dEmail) => dEmail.id !== email.id)
+      );
+
+      chrome.storage.sync.get(["emailStats"], (result) => {
       const stats = result.emailStats || { delayed: 0, canceled: 0, edited: 0 };
-      stats.edited += 1;
-      chrome.storage.sync.set({ emailStats: stats });
-    });
+        stats.edited += 1;
+        chrome.storage.sync.set({ emailStats: stats });
+      });
+    } catch (error) {
+      console.error("[EmailMagic] Error editing email:", error);
+    }
   };
 
   return (
@@ -230,10 +275,10 @@ const GmailIntegration: React.FC = () => {
               {Math.ceil(email.remainingTime)}s
             </span>
             <div className="delay-actions">
-              <button onClick={() => editEmail(email.id)} className="button edit" title="Edit email">
+              <button onClick={() => editEmail(email)} className="button edit" title="Edit email">
                 <Clock size={14} />
               </button>
-              <button onClick={() => cancelEmail(email.id)} className="button cancel" title="Cancel send">
+              <button onClick={() => cancelEmail(email)} className="button cancel" title="Cancel send">
                 <X size={14} />
               </button>
             </div>
