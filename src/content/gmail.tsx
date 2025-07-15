@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import GmailIntegration from './components/GmailIntegration'
 import "./Content.css"
 
-console.log('[EmailMagic: DelaySend] Gmail integration loaded')
+console.log('[Email Magic: SendLock] Gmail integration loaded')
 
 // Initialize the Gmail integration component
 const container = document.createElement('div')

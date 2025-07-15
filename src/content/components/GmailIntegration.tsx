@@ -28,7 +28,7 @@ const GmailIntegration: React.FC = () => {
 
   // Initialize Gmail integration
   useEffect(() => {
-    console.log("[EmailMagic: DelaySend] Initializing Gmail integration");
+    console.log("[Email Magic: SendLock] Initializing Gmail integration");
 
     // Load settings from storage
     chrome.storage.local.get(["delayDuration"], (result) => {
@@ -66,9 +66,9 @@ const GmailIntegration: React.FC = () => {
           if (
             button instanceof HTMLElement &&
             isInsideComposeWindow(button) &&
-            !button.dataset.emailMagicHandled
+            !button.dataset.Email MagicHandled
           ) {
-            button.dataset.emailMagicHandled = "true";
+            button.dataset.Email MagicHandled = "true";
             attachDelayHandler(button);
           }
         });
@@ -129,7 +129,7 @@ const GmailIntegration: React.FC = () => {
       const content = GmailUtils.getEmailContent();
       return { recipient, subject, content };
     } catch (error) {
-      console.error("[EmailMagic] Error extracting email data:", error);
+      console.error("[Email Magic] Error extracting email data:", error);
       return null;
     }
   };
@@ -189,7 +189,7 @@ const GmailIntegration: React.FC = () => {
         email.originalButton.removeEventListener("click", email.noopClickHandler, true);
         email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
       }
-      delete email.originalButton.dataset.emailMagicHandled;
+      delete email.originalButton.dataset.Email MagicHandled;
 
       // Dispatch a real click event
       const clickEvent = new MouseEvent("click", {
@@ -208,9 +208,9 @@ const GmailIntegration: React.FC = () => {
         chrome.storage.sync.set({ emailStats: stats });
       });
 
-      console.log("[EmailMagic] Email sent after delay");
+      console.log("[Email Magic] Email sent after delay");
     } catch (error) {
-      console.error("[EmailMagic] Error sending email:", error);
+      console.error("[Email Magic] Error sending email:", error);
     }
   };
 
@@ -236,7 +236,7 @@ const GmailIntegration: React.FC = () => {
         chrome.storage.sync.set({ emailStats: stats });
       });
     } catch (error) {
-      console.error("[EmailMagic] Error canceling email:", error);
+      console.error("[Email Magic] Error canceling email:", error);
     }
   };
 
@@ -262,7 +262,7 @@ const GmailIntegration: React.FC = () => {
         chrome.storage.sync.set({ emailStats: stats });
       });
     } catch (error) {
-      console.error("[EmailMagic] Error editing email:", error);
+      console.error("[Email Magic] Error editing email:", error);
     }
   };
 

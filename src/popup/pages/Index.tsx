@@ -99,8 +99,8 @@ const Index = () => {
           <div className="max-w-6xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <img src="/images/email-magic-logo.png" alt="EmailMagic Logo" className="w-12 h-8 object-contain" />
-                <h1 className="text-md font-semibold text-slate-900 dark:text-white">DelaySend</h1>
+                <img src="/images/email-magic-logo.png" alt="Email Magic Logo" className="w-12 h-8 object-contain" />
+                <h1 className="text-md font-semibold text-slate-900 dark:text-white">SendLock</h1>
               </div>
               <div className="flex items-center space-x-1">
                 <Badge
@@ -141,7 +141,7 @@ const Index = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <h2 className="text-2xl font-semibold mb-2">Welcome back</h2>
-                    <p className="text-blue-100 text-lg">Your emails are protected with smart DelaySending</p>
+                    <p className="text-blue-100 text-lg">Your emails are protected with smart SendLocking</p>
                     <div className="flex items-center mt-4 space-x-6">
                       <div className="flex items-center space-x-2">
                         <Clock className="w-5 h-5 text-blue-200" />
