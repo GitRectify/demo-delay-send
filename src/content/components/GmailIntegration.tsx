@@ -75,28 +75,43 @@ const GmailIntegration: React.FC = () => {
     const handler = (e: Event) => {
       const emailData = extractEmailData();
       if (emailData) {
+        // Only handle keyboard events if they match expected keys
+        if (e.type === "keydown") {
+          const ke = e as KeyboardEvent;
+          const isValidKey =
+            ke.key === "Enter" ||
+            ke.key === " " || // Space
+            ke.key === "Spacebar" || // Legacy browsers
+            (ke.key === "Enter" && (ke.ctrlKey || ke.metaKey));
+
+          if (!isValidKey) return; // Don't handle other keys
+        }
+
         e.preventDefault();
         e.stopPropagation();
-        // Remove our handler so we don't intercept our own send
-        // button.removeEventListener("click", handler, true);
-        addDelayEmail(emailData, button, handler);
+
+        // Remove our custom click handler
+        button.removeEventListener("click", handler, true);
+        button.removeEventListener("keydown", handler, true);
+
+        // Replace with empty handler to neutralize button
+        const noop = (e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
+        };
+
+        button.addEventListener("click", noop, true);
+        button.addEventListener("keydown", noop, true);
+        button.innerText = "Delaying..."
+
+        addDelayEmail(emailData, button, noop);
       }
     };
 
     // Mouse click
     button.addEventListener("click", handler, true);
-
     // Keyboard: Enter, Space, Ctrl+Enter
-    button.addEventListener("keydown", (e: KeyboardEvent) => {
-      if (
-        e.key === "Enter" ||
-        e.key === " " ||
-        e.key === "Spacebar" ||
-        (e.key === "Enter" && (e.ctrlKey || e.metaKey))
-      ) {
-        handler(e);
-      }
-    }, true);
+    button.addEventListener("keydown", handler, true);
   };
 
   const extractEmailData = () => {
@@ -129,6 +144,8 @@ const GmailIntegration: React.FC = () => {
 
     setDelayingEmails((prev) => [...prev, delayingEmail]);
 
+    chrome.storage.sync.set({delayingEmails: delayingEmails});
+
     const countdown = setInterval(() => {
       setDelayingEmails((prev) => {
         const updated = prev
@@ -156,6 +173,7 @@ const GmailIntegration: React.FC = () => {
       // Remove our handler so we don't intercept our own send
       if (email.originalClickHandler) {
         email.originalButton.removeEventListener("click", email.originalClickHandler, true);
+        email.originalButton.removeEventListener("keydown", email.originalClickHandler, true);
       }
       delete email.originalButton.dataset.emailMagicHandled;
 
@@ -166,6 +184,8 @@ const GmailIntegration: React.FC = () => {
         view: window,
       });
       email.originalButton.dispatchEvent(clickEvent);
+
+      email.originalButton.innerText = "Send"
 
       // Stats, etc...
       chrome.storage.sync.get(["emailStats"], (result) => {
