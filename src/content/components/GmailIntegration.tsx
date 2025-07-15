@@ -17,11 +17,12 @@ interface DelayingEmail {
   remainingTime: number;
   startTime: number;
   originalButton: HTMLElement;
+  originalClickHandler?: (e: Event) => void;
 }
 
 const GmailIntegration: React.FC = () => {
   const [delayingEmails, setDelayingEmails] = useState<DelayingEmail[]>([]);
-  const [delayDuration, setDelayDuration] = useState(30); // 60 seconds default
+  const [delayDuration, setDelayDuration] = useState(30); // 30 seconds default
   const observerRef = useRef<MutationObserver | null>(null);
 
   // Initialize Gmail integration
@@ -42,6 +43,18 @@ const GmailIntegration: React.FC = () => {
     return () => observerRef.current?.disconnect();
   }, []);
 
+  // Helper: check if a button is inside a compose window
+  const isInsideComposeWindow = (button: HTMLElement): boolean => {
+    let el: HTMLElement | null = button;
+    while (el) {
+      if (el.matches && GmailSelectors.composeWindow.some(sel => el.matches(sel))) {
+        return true;
+      }
+      el = el.parentElement;
+    }
+    return false;
+  };
+
   const observeSendButtons = (): MutationObserver => {
     const observer = new MutationObserver(() => {
       GmailSelectors.sendButton.forEach((selector) => {
@@ -59,18 +72,17 @@ const GmailIntegration: React.FC = () => {
   };
 
   const attachDelayHandler = (button: HTMLElement) => {
-    const handler = async (e: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       const emailData = extractEmailData();
-
       if (emailData) {
         e.preventDefault();
         e.stopPropagation();
-        console.log(button.click())
-        addDelayEmail(emailData, button);
+        // Remove our handler so we don't intercept our own send
+        button.removeEventListener("click", handler, true);
+        addDelayEmail(emailData, button, handler);
       }
     };
-
-    button.addEventListener("click", handler, { capture: true });
+    button.addEventListener("click", handler, true);
   };
 
   const extractEmailData = () => {
@@ -85,7 +97,7 @@ const GmailIntegration: React.FC = () => {
     }
   };
 
-  const addDelayEmail = (emailData: any, originalButton: HTMLElement) => {
+  const addDelayEmail = (emailData: any, originalButton: HTMLElement, handler: EventListener) => {
     const emailId = `email-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
 
@@ -98,6 +110,7 @@ const GmailIntegration: React.FC = () => {
       remainingTime: delayDuration,
       startTime,
       originalButton,
+      originalClickHandler: handler,
     };
 
     setDelayingEmails((prev) => [...prev, delayingEmail]);
@@ -126,9 +139,21 @@ const GmailIntegration: React.FC = () => {
 
   const sendEmail = (email: DelayingEmail) => {
     try {
+      // Remove our handler so we don't intercept our own send
+      if (email.originalClickHandler) {
+        email.originalButton.removeEventListener("click", email.originalClickHandler, true);
+      }
       delete email.originalButton.dataset.emailMagicHandled;
-      console.log(      email.originalButton.click())
 
+      // Dispatch a real click event
+      const clickEvent = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+      });
+      email.originalButton.dispatchEvent(clickEvent);
+
+      // Stats, etc...
       chrome.storage.sync.get(["emailStats"], (result) => {
         const stats = result.emailStats || { delayed: 0, canceled: 0, edited: 0 };
         stats.delayed += 1;
