@@ -82,7 +82,21 @@ const GmailIntegration: React.FC = () => {
         addDelayEmail(emailData, button, handler);
       }
     };
+
+    // Mouse click
     button.addEventListener("click", handler, true);
+
+    // Keyboard: Enter, Space, Ctrl+Enter
+    button.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (
+        e.key === "Enter" ||
+        e.key === " " ||
+        e.key === "Spacebar" ||
+        (e.key === "Enter" && (e.ctrlKey || e.metaKey))
+      ) {
+        handler(e);
+      }
+    }, true);
   };
 
   const extractEmailData = () => {
