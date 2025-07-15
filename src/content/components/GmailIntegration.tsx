@@ -65,6 +65,7 @@ const GmailIntegration: React.FC = () => {
         document.querySelectorAll(selector).forEach((button) => {
           if (
             button instanceof HTMLElement &&
+            isInsideComposeWindow(button) &&
             !button.dataset.emailMagicHandled
           ) {
             button.dataset.emailMagicHandled = "true";

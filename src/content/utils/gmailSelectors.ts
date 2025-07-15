@@ -1,6 +1,6 @@
 // Gmail selectors for different UI elements
 export const GmailSelectors = {
-  // Send button selectors (multiple variations)
+  // Send button selectors (comprehensive)
   sendButton: [
     '[aria-label="Send"]',
     '[data-tooltip="Send"]',
@@ -13,10 +13,14 @@ export const GmailSelectors = {
     // '.T-I.T-I-KE',
     // More specific selectors
     'div[role="button"][tabindex="0"][aria-label*="Send"]',
-    'div[role="button"][tabindex="0"][data-tooltip*="Send"]'
+    'div[role="button"][tabindex="0"][data-tooltip*="Send"]',
+    'div[role="button"][data-tooltip^="Send"]',
+    'div[role="button"][aria-label^="Send"]',
+    'div[role="button"][data-tooltip^="Send ‪"]',
+    'div[role="button"]:has(svg)'
   ],
 
-  // Compose window selectors
+  // Compose window selectors (broader coverage)
   composeWindow: [
     '[role="dialog"]',
     '.Am.Al.editable',
@@ -24,21 +28,30 @@ export const GmailSelectors = {
     '.aH9.aH8',
     // Gmail's compose container
     'div[role="dialog"][aria-label*="Compose"]',
-    'div[role="dialog"][aria-label*="New Message"]'
+    'div[role="dialog"][aria-label*="New Message"]',
+    'div[role="dialog"][aria-label*="Reply"]',
+    'div[role="dialog"][aria-label*="Forward"]',
+    '.nH.Hd',
+    '.aDh',
+    '.Ap', // fallback legacy
+    '.AD',        // Full-size compose window
+    '.a3s',       // Inline reply area (body container)
+    '.adn'        // Inline reply wrapper
   ],
 
-  // Recipient input selectors
+  // Recipient input selectors (expanded)
   recipientInput: [
     'input[aria-label*="recipient"]',
     'input[aria-label*="To"]',
     'input[name="to"]',
     '.vO',
     '.vO input',
+    'textarea[name="to"]',
     // Gmail's recipient field
     'input[aria-label*="Recipients"]'
   ],
 
-  // Subject input selectors
+  // Subject input selectors (more robust)
   subjectInput: [
     'input[aria-label*="subject"]',
     'input[name="subjectbox"]',
@@ -49,21 +62,24 @@ export const GmailSelectors = {
     'input[aria-label*="Subject"]'
   ],
 
-  // Email content selectors
+  // Email content selectors (unified and fallback)
   emailContent: [
     '[contenteditable="true"]',
     '.Am.Al.editable',
     '.Am.Al',
     // Gmail's content area
     'div[role="textbox"]',
-    'div[contenteditable="true"][aria-label*="Message Body"]'
+    'div[contenteditable="true"][aria-label*="Message Body"]',
+    'div.editable.LW-avf.tS-tW'
   ],
 
   // Undo send button (if available)
   undoSend: [
     '[aria-label*="Undo"]',
     '[data-tooltip*="Undo"]',
-    '.bAq'
+    '.bAq',
+    'span:contains("Undo")',
+    'button:contains("Undo")'
   ]
 }
 
