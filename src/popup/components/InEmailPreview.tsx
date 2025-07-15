@@ -42,7 +42,7 @@ const InEmailPreview: React.FC<InEmailPreviewProps> = ({ currentDelay }) => {
         )}
       </div>
       <div className="text-xs">
-        <span className="text-slate-600 font-medium">Delay Send</span>
+        <span className="text-slate-600 font-medium">DelaySend</span>
         <span className="text-blue-600 ml-1 font-mono">{countdown}s</span>
       </div>
     </div>
@@ -67,7 +67,7 @@ const InEmailPreview: React.FC<InEmailPreviewProps> = ({ currentDelay }) => {
             <span>Visual Preview</span>
           </CardTitle>
           <CardDescription>
-            See how Delay Send appears when you send an email in Gmail
+            See how DelaySend appears when you send an email in Gmail
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -141,7 +141,7 @@ const InEmailPreview: React.FC<InEmailPreviewProps> = ({ currentDelay }) => {
               </div>
             </div>
 
-            {/* Delay Send Indicator - Bottom Right */}
+            {/* DelaySend Indicator - Bottom Right */}
             {isActive && countdown > 0 && (
               <div className="absolute bottom-6 right-6 animate-in fade-in-0 slide-in-from-bottom-2">
                 <DelayIndicator />

@@ -27,7 +27,7 @@ const GmailIntegration: React.FC = () => {
 
   // Initialize Gmail integration
   useEffect(() => {
-    console.log("[Email Magic: Delay Send] Initializing Gmail integration");
+    console.log("[EmailMagic: DelaySend] Initializing Gmail integration");
 
     // Load settings from storage
     chrome.storage.local.get(["delayDuration"], (result) => {
@@ -72,13 +72,13 @@ const GmailIntegration: React.FC = () => {
   };
 
   const attachDelayHandler = (button: HTMLElement) => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: Event) => {
       const emailData = extractEmailData();
       if (emailData) {
         e.preventDefault();
         e.stopPropagation();
         // Remove our handler so we don't intercept our own send
-        button.removeEventListener("click", handler, true);
+        // button.removeEventListener("click", handler, true);
         addDelayEmail(emailData, button, handler);
       }
     };
@@ -92,7 +92,7 @@ const GmailIntegration: React.FC = () => {
       const content = GmailUtils.getEmailContent();
       return { recipient, subject, content };
     } catch (error) {
-      console.error("[Email Magic] Error extracting email data:", error);
+      console.error("[EmailMagic] Error extracting email data:", error);
       return null;
     }
   };
@@ -160,9 +160,9 @@ const GmailIntegration: React.FC = () => {
         chrome.storage.sync.set({ emailStats: stats });
       });
 
-      console.log("[Email Magic] Email sent after delay");
+      console.log("[EmailMagic] Email sent after delay");
     } catch (error) {
-      console.error("[Email Magic] Error sending email:", error);
+      console.error("[EmailMagic] Error sending email:", error);
     }
   };
 

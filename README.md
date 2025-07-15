@@ -1,11 +1,11 @@
-# Email Magic: Delay Send
+# EmailMagic: DelaySend
 
 A Chrome Extension that provides smart email delay protection for Gmail, preventing rushed decisions and communication mistakes.
 
 ## Features
 
 ### Core Functionality
-- **Smart Delay Send**: Intercepts Gmail's send button and delays emails for a configurable time period
+- **Smart DelaySend**: Intercepts Gmail's send button and delays emails for a configurable time period
 - **Visual Feedback**: Shows a premium shield/clock indicator with countdown timer
 - **Edit & Cancel**: Allows users to edit or cancel delayed emails before sending
 - **Usage Analytics**: Tracks email interactions and prevented mistakes
@@ -194,8 +194,8 @@ const extractEmailData = () => {
 ### Debug Mode
 Enable debug logging by opening the browser console and looking for:
 ```
-[Email Magic: Delay Send] Gmail integration loaded
-[Email Magic: Delay Send] Initializing Gmail integration
+[EmailMagic: DelaySend] Gmail integration loaded
+[EmailMagic: DelaySend] Initializing Gmail integration
 ```
 
 ## Contributing

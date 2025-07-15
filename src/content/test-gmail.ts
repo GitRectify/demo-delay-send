@@ -3,7 +3,7 @@
 
 import { GmailSelectors, findElement, findAllElements, matchesAnySelector, GmailUtils } from './utils/gmailSelectors'
 
-console.log('[Email Magic: Delay Send] Running Gmail integration tests...')
+console.log('[EmailMagic: DelaySend] Running Gmail integration tests...')
 
 // Test 1: Check if we can find send buttons
 const sendButtons = findAllElements(GmailSelectors.sendButton)
@@ -36,4 +36,4 @@ if (testElement) {
   console.log('Test element matches send button selector:', matches)
 }
 
-console.log('[Email Magic: Delay Send] Gmail integration tests completed!') 
+console.log('[EmailMagic: DelaySend] Gmail integration tests completed!') 
