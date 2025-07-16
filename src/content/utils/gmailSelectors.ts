@@ -1,149 +1,47 @@
-// Gmail selectors for different UI elements
-export const GmailSelectors = {
-  // Send button selectors (comprehensive)
-  sendButton: [
-    '[aria-label="Send"]',
-    '[data-tooltip="Send"]',
-    'div[role="button"][aria-label*="Send"]',
-    'button[aria-label*="Send"]',
-    '[data-tooltip*="Send"]',
-    'div[role="button"][data-tooltip*="Send"]',
-    // Gmail's specific send button classes
-    // '.T-I.T-I-KE.L3',
-    // '.T-I.T-I-KE',
-    // More specific selectors
-    'div[role="button"][tabindex="0"][aria-label*="Send"]',
-    'div[role="button"][tabindex="0"][data-tooltip*="Send"]',
-    'div[role="button"][data-tooltip^="Send"]',
-    'div[role="button"][aria-label^="Send"]',
-    'div[role="button"][data-tooltip^="Send ‪"]',
-    'div[role="button"]:has(svg)'
-  ],
+// Utility functions for Gmail DOM interaction
 
-  // Compose window selectors (broader coverage)
-  composeWindow: [
-    '[role="dialog"]',
-    '.Am.Al.editable',
-    '.aH9',
-    '.aH9.aH8',
-    // Gmail's compose container
-    'div[role="dialog"][aria-label*="Compose"]',
-    'div[role="dialog"][aria-label*="New Message"]',
-    'div[role="dialog"][aria-label*="Reply"]',
-    'div[role="dialog"][aria-label*="Forward"]',
-    '.nH.Hd',
-    '.aDh',
-    '.Ap', // fallback legacy
-    '.AD',        // Full-size compose window
-    '.a3s',       // Inline reply area (body container)
-    '.adn'        // Inline reply wrapper
-  ],
-
-  // Recipient input selectors (expanded)
-  recipientInput: [
-    'input[aria-label*="recipient"]',
-    'input[aria-label*="To"]',
-    'input[name="to"]',
-    '.vO',
-    '.vO input',
-    'textarea[name="to"]',
-    // Gmail's recipient field
-    'input[aria-label*="Recipients"]'
-  ],
-
-  // Subject input selectors (more robust)
-  subjectInput: [
-    'input[aria-label*="subject"]',
-    'input[name="subjectbox"]',
-    'input[name="subject"]',
-    '.aoT',
-    '.aoT input',
-    // Gmail's subject field
-    'input[aria-label*="Subject"]'
-  ],
-
-  // Email content selectors (unified and fallback)
-  emailContent: [
-    '[contenteditable="true"]',
-    '.Am.Al.editable',
-    '.Am.Al',
-    // Gmail's content area
-    'div[role="textbox"]',
-    'div[contenteditable="true"][aria-label*="Message Body"]',
-    'div.editable.LW-avf.tS-tW'
-  ],
-
-  // Undo send button (if available)
-  undoSend: [
-    '[aria-label*="Undo"]',
-    '[data-tooltip*="Undo"]',
-    '.bAq',
-    'span:contains("Undo")',
-    'button:contains("Undo")'
-  ]
+// Returns all open compose windows
+export function getComposeWindows(): HTMLElement[] {
+  return Array.from(document.querySelectorAll('div[role="dialog"]')) as HTMLElement[];
 }
 
-// Helper function to find elements using multiple selectors
-export function findElement(selectors: string[], context: Document | Element = document): Element | null {
-  for (const selector of selectors) {
-    const element = context.querySelector(selector)
-    if (element) {
-      return element
-    }
-  }
-  return null
+// Returns the send button within a compose window
+export function getSendButton(composeWindow: HTMLElement): HTMLButtonElement | null {
+  return composeWindow.querySelector('div[role="button"][data-tooltip^="Send"]') as HTMLButtonElement | null;
 }
 
-// Helper function to find all elements using multiple selectors
-export function findAllElements(selectors: string[], context: Document | Element = document): Element[] {
-  const elements: Element[] = []
-  for (const selector of selectors) {
-    const found = context.querySelectorAll(selector)
-    elements.push(...Array.from(found))
-  }
-  return elements
+// Returns the subject input within a compose window
+export function getSubjectInput(composeWindow: HTMLElement): HTMLInputElement | null {
+  return composeWindow.querySelector('input[name="subjectbox"]') as HTMLInputElement | null;
 }
 
-// Helper function to check if an element matches any of the selectors
-export function matchesAnySelector(element: Element, selectors: string[]): boolean {
-  return selectors.some(selector => element.matches(selector))
+// Returns the body contenteditable div within a compose window
+export function getBodyDiv(composeWindow: HTMLElement): HTMLElement | null {
+  return composeWindow.querySelector('div[aria-label="Message Body"]') as HTMLElement | null;
 }
 
-// Gmail-specific utility functions
-export const GmailUtils = {
-  // Check if we're in a Gmail compose window
-  isInComposeWindow(): boolean {
-    return findElement(GmailSelectors.composeWindow) !== null
-  },
+// Returns the recipient input(s) within a compose window
+export function getRecipientInputs(composeWindow: HTMLElement): HTMLInputElement[] {
+  return Array.from(composeWindow.querySelectorAll('textarea[name="to"], textarea[name="cc"], textarea[name="bcc"]')) as HTMLInputElement[];
+}
 
-  // Get the current compose window
-  getComposeWindow(): Element | null {
-    return findElement(GmailSelectors.composeWindow)
-  },
+// Extracts email data from a compose window
+export function extractEmailData(composeWindow: HTMLElement) {
+  const subject = getSubjectInput(composeWindow)?.value || '';
+  const body = getBodyDiv(composeWindow)?.innerHTML || '';
+  const to = (composeWindow.querySelector('textarea[name="to"]') as HTMLInputElement)?.value || '';
+  const cc = (composeWindow.querySelector('textarea[name="cc"]') as HTMLInputElement)?.value || '';
+  const bcc = (composeWindow.querySelector('textarea[name="bcc"]') as HTMLInputElement)?.value || '';
+  return { to, cc, bcc, subject, body };
+}
 
-  // Get recipient information
-  getRecipient(): string {
-    const input = findElement(GmailSelectors.recipientInput)
-    return input ? (input as HTMLInputElement).value : ''
-  },
-
-  // Get subject information
-  getSubject(): string {
-    const input = findElement(GmailSelectors.subjectInput)
-    return input ? (input as HTMLInputElement).value : ''
-  },
-
-  // Get email content
-  getEmailContent(): string {
-    const content = findElement(GmailSelectors.emailContent)
-    if (content) {
-      return content.textContent || (content as HTMLElement).innerText || ''
-    }
-    return ''
-  },
-
-  // Check if undo send is available
-  hasUndoSend(): boolean {
-    return findElement(GmailSelectors.undoSend) !== null
-  }
+// Observe for new compose windows
+export function observeComposeWindows(callback: (composeWindow: HTMLElement) => void) {
+  const observer = new MutationObserver(() => {
+    getComposeWindows().forEach(callback);
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  // Initial call
+  getComposeWindows().forEach(callback);
+  return observer;
 }
