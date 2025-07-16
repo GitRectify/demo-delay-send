@@ -69,7 +69,7 @@ const GmailIntegration: React.FC = () => {
             const parentCompose = getParentComposeWindow(button)
             if (parentCompose){
               button.dataset.emailMagicHandled = "true";
-              attachDelayHandler(parentCompose, button);
+              attachDelayHandler(button);
             }
           }
         });
@@ -80,9 +80,11 @@ const GmailIntegration: React.FC = () => {
     return observer;
   };
 
-  const attachDelayHandler = (parentCompose: HTMLElement, sendButton: HTMLElement) => {
+  const attachDelayHandler = (sendButton: HTMLElement) => {
     console.log("[SendLock]: This is in attachDelayHandeler")
     const delayHandler = (e: Event) => {
+      const target = e.target as HTMLElement
+      const parentCompose = getParentComposeWindow(target);
       const emailInfo = getEmailInfo(parentCompose);
       if (emailInfo) {
         // Only handle keyboard events if they match expected keys
