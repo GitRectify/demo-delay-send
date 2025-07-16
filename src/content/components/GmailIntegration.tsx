@@ -81,7 +81,7 @@ const GmailIntegration: React.FC = () => {
   };
 
   const attachDelayHandler = (sendButton: HTMLElement) => {
-    console.log("[SendLock]: This is in attachDelayHandeler")
+    console.log("[Email Magic: SendLock]: This is in attachDelayHandeler")
     const delayHandler = (e: Event) => {
       const target = e.target as HTMLElement
       const parentCompose = getParentComposeWindow(target);
@@ -127,33 +127,33 @@ const GmailIntegration: React.FC = () => {
   };
 
   const getEmailInfo = (parentCompose: HTMLElement) => {
-    console.log("[SendLock]: This is in getEmailInfo")
+    console.log("[Email Magic: SendLock]: This is in getEmailInfo")
     try {
 
       const recipientInput = findElement(GmailSelectors.recipientInput, parentCompose);
       const recipient = recipientInput ? (recipientInput as HTMLInputElement).value : ''
-      console.log("[SendLock]: getEmailInfo-recipient", recipient)
+      // console.log("[Email Magic: SendLock]: getEmailInfo-recipient", recipient)
 
       const subjectInput = findElement(GmailSelectors.subjectInput, parentCompose);
       const subject = subjectInput ? (subjectInput as HTMLInputElement).value : ''
-      console.log("[SendLock]: getEmailInfo-subject", subject)
+      // console.log("[Email Magic: SendLock]: getEmailInfo-subject", subject)
 
       const contentEditable = findElement(GmailSelectors.emailContent, parentCompose);
       const content = contentEditable ? (contentEditable as HTMLElement).innerText : ''
-      console.log("[SendLock]: getEmailInfo-content", content)
+      // console.log("[Email Magic: SendLock]: getEmailInfo-content", content)
 
       // if (!recipient) return null;
       // if (!subject && !content) return null;
 
       return { parentCompose, recipient, subject };
     } catch (error) {
-      console.error("[Email Magic] Error extracting email data:", error);
+      console.error("[Email Magic: SendLock] Error extracting email data:", error);
       return null;
     }
   };
 
   const addDelayEmail = ( emailInfo: any, originalButton: HTMLElement, noopHandler: EventListener, delayHandler: EventListener ) => {
-    console.log("[SendLock]: This is in addDelayEmail")
+    console.log("[Email Magic: SendLock]: This is in addDelayEmail")
     const emailId = `email-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
 
@@ -197,7 +197,7 @@ const GmailIntegration: React.FC = () => {
   };
 
   const sendEmail = (email: DelayingEmail) => {
-    console.log("[SendLock]: This is in sendEmail")
+    console.log("[Email Magic: SendLock]: This is in sendEmail")
     try {
       // Remove our handler so we don't intercept our own send
       if (email.noopClickHandler) {
@@ -223,14 +223,14 @@ const GmailIntegration: React.FC = () => {
         chrome.storage.sync.set({ emailStats: stats });
       });
 
-      console.log("[Email Magic] Email sent after delay");
+      console.log("[Email Magic: SendLock] Email sent after delay");
     } catch (error) {
-      console.error("[Email Magic] Error sending email:", error);
+      console.error("[Email Magic: SendLock] Error sending email:", error);
     }
   };
 
   const cancelEmail = (email: DelayingEmail) => {
-    console.log("[SendLock]: This is in cancelEmail")
+    console.log("[SendLock: SendLock]: This is in cancelEmail")
     try {
       if (email.noopClickHandler) {
         email.originalButton.removeEventListener("click", email.noopClickHandler, true);
@@ -252,12 +252,12 @@ const GmailIntegration: React.FC = () => {
         chrome.storage.sync.set({ emailStats: stats });
       });
     } catch (error) {
-      console.error("[Email Magic] Error canceling email:", error);
+      console.error("[Email Magic: SendLock] Error canceling email:", error);
     }
   };
 
   const editEmail = (email: DelayingEmail) => {
-    console.log("[SendLock]: This is in editEmail")
+    console.log("[Email Magic: SendLock]: This is in editEmail")
     try {
       if (email.noopClickHandler) {
         email.originalButton.removeEventListener("click", email.noopClickHandler, true);
@@ -279,7 +279,7 @@ const GmailIntegration: React.FC = () => {
         chrome.storage.sync.set({ emailStats: stats });
       });
     } catch (error) {
-      console.error("[Email Magic] Error editing email:", error);
+      console.error("[Email Magic: SendLock] Error editing email:", error);
     }
   };
 
