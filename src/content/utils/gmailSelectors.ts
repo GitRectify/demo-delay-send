@@ -32,6 +32,7 @@ export const GmailSelectors = {
     'div[role="dialog"][aria-label*="Reply"]',
     'div[role="dialog"][aria-label*="Forward"]',
     '.nH.Hd',
+    'td.I5',
     '.Ap', // fallback legacy
     '.AD',        // Full-size compose window
     '.a3s',       // Inline reply area (body container)
@@ -40,14 +41,12 @@ export const GmailSelectors = {
 
   // Recipient input selectors (expanded)
   recipientInput: [
-    'input[aria-label*="recipient"]',
-    'input[aria-label*="To"]',
-    'input[name="to"]',
-    '.vO',
-    '.vO input',
     'textarea[name="to"]',
-    // Gmail's recipient field
-    'input[aria-label*="Recipients"]'
+    'input[name="to"]',
+    'input[aria-label*="To"]',
+    'input[aria-label*="recipient"]',
+    'input[aria-label*="Recipients"]',
+    '.vO input'
   ],
 
   // Subject input selectors (more robust)
@@ -124,6 +123,79 @@ export const GmailUtils = {
   getRecipient(): string {
     const input = findElement(GmailSelectors.recipientInput)
     return input ? (input as HTMLInputElement).value : ''
+  },
+
+  getAllRecipients(composeWindow: HTMLElement): string[] {
+    const recipients: string[] = [];
+
+    // 1. New Gmail UI chips (2024+)
+    // <div role="option" class="afV"> ... <div class="akl" translate="no">email</div>
+    const newChips = composeWindow.querySelectorAll('div[role="option"].afV');
+    newChips.forEach(chip => {
+      const emailDiv = chip.querySelector('.akl[translate="no"]');
+      if (emailDiv && emailDiv.textContent) {
+        recipients.push(emailDiv.textContent.trim());
+      }
+    });
+
+    // 2. Classic Gmail chips
+    // <span class="vN" role="listitem"> ... <span class="g2">email</span>
+    const classicChips = composeWindow.querySelectorAll('.vN[role="listitem"]');
+    classicChips.forEach(chip => {
+      const emailSpan = chip.querySelector('.g2');
+      if (emailSpan && emailSpan.textContent) {
+        recipients.push(emailSpan.textContent.trim());
+      } else if (chip.textContent) {
+        recipients.push(chip.textContent.trim());
+      }
+    });
+
+    // 3. Chips with role="listitem" (future-proof, any class)
+    const roleListitemChips = composeWindow.querySelectorAll('[role="listitem"]');
+    roleListitemChips.forEach(chip => {
+      // Avoid duplicates from classicChips
+      if (!chip.classList.contains('vN')) {
+        if (chip.textContent) recipients.push(chip.textContent.trim());
+      }
+    });
+
+    // 4. Chips with role="option" (future-proof, any class)
+    const roleOptionChips = composeWindow.querySelectorAll('[role="option"]');
+    roleOptionChips.forEach(chip => {
+      // Avoid duplicates from newChips
+      if (!chip.classList.contains('afV')) {
+        if (chip.textContent) recipients.push(chip.textContent.trim());
+      }
+    });
+
+    // 5. Any element with data-hovercard-id (Gmail sometimes uses this for chips)
+    const hovercardChips = composeWindow.querySelectorAll('[data-hovercard-id]');
+    hovercardChips.forEach(chip => {
+    const email = chip.getAttribute('data-hovercard-id');
+    if (email && email.includes('@')) { // Only real emails
+      recipients.push(email.trim());
+    }
+  });
+
+    // 6. Any visible "To" input/textarea (for addresses being typed but not yet chipped)
+    for (const sel of GmailSelectors.recipientInput) {
+      const input = composeWindow.querySelector(sel) as HTMLInputElement | null;
+      if (input && input.value) {
+        input.value.split(/[,;]/).forEach(addr => {
+          const trimmed = addr.trim();
+          if (trimmed) recipients.push(trimmed);
+        });
+      }
+    }
+
+    // 7. Fallback: any element with class "akl" and translate="no" (in case Gmail changes chip container)
+    const aklChips = composeWindow.querySelectorAll('.akl[translate="no"]');
+    aklChips.forEach(el => {
+      if (el.textContent) recipients.push(el.textContent.trim());
+    });
+
+    // Remove duplicates and empty strings
+    return Array.from(new Set(recipients)).filter(Boolean).filter(recipient => recipient.includes('@'));
   },
 
   // Get subject information
