@@ -8,10 +8,6 @@ export const GmailSelectors = {
     'button[aria-label*="Send"]',
     '[data-tooltip*="Send"]',
     'div[role="button"][data-tooltip*="Send"]',
-    // Gmail's specific send button classes
-    // '.T-I.T-I-KE.L3',
-    // '.T-I.T-I-KE',
-    // More specific selectors
     'div[role="button"][tabindex="0"][aria-label*="Send"]',
     'div[role="button"][tabindex="0"][data-tooltip*="Send"]',
     'div[role="button"][data-tooltip^="Send"]',
