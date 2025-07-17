@@ -86,6 +86,7 @@ const GmailIntegration: React.FC = () => {
     const delayHandler = (e: Event) => {
       const target = e.target as HTMLElement
       const parentCompose = getParentComposeWindow(target);
+      console.log("GetCompose===>", parentCompose)
       const emailInfo = getEmailInfo(parentCompose);
       if (emailInfo) {
         // Only handle keyboard events if they match expected keys
@@ -131,54 +132,88 @@ const GmailIntegration: React.FC = () => {
     console.log("[Email Magic: SendLock]: This is in getEmailInfo")
     try {
 
-      const recipientInput = findElement(GmailSelectors.recipientInput, parentCompose);
-      const recipient = recipientInput ? (recipientInput as HTMLInputElement).value : ''
-      // console.log("[Email Magic: SendLock]: getEmailInfo-recipient", recipient)
+      let recipient = '';
+      for (const sel of GmailSelectors.recipientInput) {
+        const el = parentCompose.querySelector(sel);
+        if (el) {
+          // Try to get value from input/textarea, or textContent for chips
+          recipient = (el as HTMLInputElement).value || el.textContent || '';
+          if (recipient && recipient !== '') break;
+        }
+      }
 
-      const subjectInput = findElement(GmailSelectors.subjectInput, parentCompose);
-      const subject = subjectInput ? (subjectInput as HTMLInputElement).value : ''
-      // console.log("[Email Magic: SendLock]: getEmailInfo-subject", subject)
+      // Subject
+      // let subject = GmailUtils.getSubject()
+      let subject = '';
+      for (const sel of GmailSelectors.subjectInput) {
+        const el = parentCompose.querySelector(sel);
+        if (el) {
+          subject = (el as HTMLInputElement).value || el.textContent || '';
+          if (subject && subject !== '') break;
+        }
+      }
 
-      const contentEditable = findElement(GmailSelectors.emailContent, parentCompose);
-      const content = contentEditable ? (contentEditable as HTMLElement).innerText : ''
-      // console.log("[Email Magic: SendLock]: getEmailInfo-content", content)
-
-      // if (!recipient) return null;
-      // if (!subject && !content) return null;
-
-      return { parentCompose, recipient, subject };
+      // Content (HTML)
+      let content = '';
+      for (const sel of GmailSelectors.emailContent) {
+        const el = parentCompose.querySelector(sel);
+        if (el) {
+          content = (el as HTMLElement).innerHTML || el.textContent || '';
+          if (content) break;
+        }
+      }
+      console.log(`recipient=${recipient}, subject=${subject}, content=${content}`)
+      return { parentCompose, recipient, subject, content };
     } catch (error) {
       console.error("[Email Magic: SendLock] Error extracting email data:", error);
       return null;
     }
   };
 
+  const getEmailData = (composeWindow: HTMLElement) => {
+    // To
+    const toInput = composeWindow.querySelector('textarea[name="to"]') as HTMLInputElement | null;
+    const to = toInput?.value || '';
+
+    // CC
+    const ccInput = composeWindow.querySelector('textarea[name="cc"]') as HTMLInputElement | null;
+    const cc = ccInput?.value || '';
+
+    // BCC
+    const bccInput = composeWindow.querySelector('textarea[name="bcc"]') as HTMLInputElement | null;
+    const bcc = bccInput?.value || '';
+
+    // Subject
+    const subjectInput = composeWindow.querySelector('input[name="subjectbox"]') as HTMLInputElement | null;
+    const subject = subjectInput?.value || '';
+
+    // Body (HTML)
+    const bodyDiv = composeWindow.querySelector('[aria-label="Message Body"]') as HTMLElement | null;
+    const body = bodyDiv?.innerHTML || '';
+
+    return { to, cc, bcc, subject, body };
+  };
+
   const addDelayEmail = ( emailInfo: any, originalButton: HTMLElement, noopHandler: EventListener, delayHandler: EventListener ) => {
     console.log("[Email Magic: SendLock]: This is in addDelayEmail")
 
-    // When user hits send, instead of simulating a click:
-    const emailData = {
-      to: ...,
-      cc: ...,
-      bcc: ...,
-      subject: ...,
-      body: ...,
-    };
-    const scheduledTime = Math.floor(Date.now() / 1000) + delayDuration; // Unix timestamp
+    // // When user hits send, instead of simulating a click:
+    // const emailData = getEmailData(emailInfo.composeWindow)
+    // const scheduledTime = Math.floor(Date.now() / 1000) + delayDuration; // Unix timestamp
 
-    chrome.runtime.sendMessage(
-      { type: 'SCHEDULE_EMAIL', emailData, scheduledTime },
-      (response) => {
-        if (response && response.success) {
-          // Show premium toast/snackbar
-          // showToast('Email scheduled for ' + new Date(scheduledTime * 1000).toLocaleTimeString());
-          // Optionally, add to Outbox UI
-        } else {
-          // Show error toast
-          // showToast('Failed to schedule email: ' + (response?.error || 'Unknown error'), 'error');
-        }
-      }
-    );
+    // chrome.runtime.sendMessage(
+    //   { type: 'SCHEDULE_EMAIL', emailData, scheduledTime },
+    //   (response) => {
+    //     if (response && response.success) {
+    //       // Show premium toast/snackbar
+    //       // showToast('Email scheduled for ' + new Date(scheduledTime * 1000).toLocaleTimeString());
+    //       // Optionally, add to Outbox UI
+    //     } else {
+    //       // Show error toast
+    //       // showToast('Failed to schedule email: ' + (response?.error || 'Unknown error'), 'error');
+    //     }
+    //   }
+    // );
 
     const emailId = `email-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();

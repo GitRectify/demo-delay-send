@@ -32,7 +32,6 @@ export const GmailSelectors = {
     'div[role="dialog"][aria-label*="Reply"]',
     'div[role="dialog"][aria-label*="Forward"]',
     '.nH.Hd',
-    '.aDh',
     '.Ap', // fallback legacy
     '.AD',        // Full-size compose window
     '.a3s',       // Inline reply area (body container)
