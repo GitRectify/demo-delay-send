@@ -86,7 +86,7 @@ const GmailIntegration: React.FC = () => {
     const delayHandler = (e: Event) => {
       const target = e.target as HTMLElement
       const parentCompose = getParentComposeWindow(target);
-      console.log("GetCompose===>", parentCompose)
+      console.log("===Compose===", parentCompose)
       const emailInfo = getEmailInfo(parentCompose);
       if (emailInfo) {
         // Only handle keyboard events if they match expected keys
@@ -128,19 +128,42 @@ const GmailIntegration: React.FC = () => {
     sendButton.addEventListener("keydown", delayHandler, true);
   };
 
+  const getAllRecipients = (composeWindow: HTMLElement): string[] => {
+    const recipients: string[] = [];
+
+    // 1. Get all chips (role="listitem" inside the To field container)
+    // Gmail uses .vN[role="listitem"] for each recipient chip
+    const chipSelector = '.vN[role="listitem"]';
+    const chips = composeWindow.querySelectorAll(chipSelector);
+    chips.forEach(chip => {
+      // The email is usually in a <span class="g2"> or as textContent
+      const emailSpan = chip.querySelector('.g2');
+      if (emailSpan && emailSpan.textContent) {
+        recipients.push(emailSpan.textContent.trim());
+      } else if (chip.textContent) {
+        recipients.push(chip.textContent.trim());
+      }
+    });
+
+    // 2. Get the value from the input/textarea (for addresses being typed)
+    const input = composeWindow.querySelector('textarea[name="to"], input[name="to"]') as HTMLInputElement | null;
+    if (input && input.value) {
+      // Split by comma or semicolon, trim, and add any non-empty
+      input.value.split(/[,;]/).forEach(addr => {
+        const trimmed = addr.trim();
+        if (trimmed) recipients.push(trimmed);
+      });
+    }
+
+    // Remove duplicates and empty strings
+    return Array.from(new Set(recipients)).filter(Boolean);
+  }
+
   const getEmailInfo = (parentCompose: HTMLElement) => {
     console.log("[Email Magic: SendLock]: This is in getEmailInfo")
     try {
 
-      let recipient = '';
-      for (const sel of GmailSelectors.recipientInput) {
-        const el = parentCompose.querySelector(sel);
-        if (el) {
-          // Try to get value from input/textarea, or textContent for chips
-          recipient = (el as HTMLInputElement).value || el.textContent || '';
-          if (recipient && recipient !== '') break;
-        }
-      }
+      let recipients = GmailUtils.getAllRecipients(parentCompose)
 
       // Subject
       // let subject = GmailUtils.getSubject()
@@ -162,8 +185,8 @@ const GmailIntegration: React.FC = () => {
           if (content) break;
         }
       }
-      console.log(`recipient=${recipient}, subject=${subject}, content=${content}`)
-      return { parentCompose, recipient, subject, content };
+      console.log(`===recipient===${recipients}\n===subject===${subject}`)
+      return { parentCompose, recipient: recipients.join(', '), subject, content };
     } catch (error) {
       console.error("[Email Magic: SendLock] Error extracting email data:", error);
       return null;
