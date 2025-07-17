@@ -155,6 +155,31 @@ const GmailIntegration: React.FC = () => {
 
   const addDelayEmail = ( emailInfo: any, originalButton: HTMLElement, noopHandler: EventListener, delayHandler: EventListener ) => {
     console.log("[Email Magic: SendLock]: This is in addDelayEmail")
+
+    // When user hits send, instead of simulating a click:
+    const emailData = {
+      to: ...,
+      cc: ...,
+      bcc: ...,
+      subject: ...,
+      body: ...,
+    };
+    const scheduledTime = Math.floor(Date.now() / 1000) + delayDuration; // Unix timestamp
+
+    chrome.runtime.sendMessage(
+      { type: 'SCHEDULE_EMAIL', emailData, scheduledTime },
+      (response) => {
+        if (response && response.success) {
+          // Show premium toast/snackbar
+          // showToast('Email scheduled for ' + new Date(scheduledTime * 1000).toLocaleTimeString());
+          // Optionally, add to Outbox UI
+        } else {
+          // Show error toast
+          // showToast('Failed to schedule email: ' + (response?.error || 'Unknown error'), 'error');
+        }
+      }
+    );
+
     const emailId = `email-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
 

@@ -15,12 +15,29 @@ export default defineManifest({
     default_popup: 'src/popup/index.html',
   },
   permissions: [
+    'identity',
     'activeTab',
-    'storage'
+    'storage',
   ],
   host_permissions: [
-    "https://mail.google.com/*"
+    "https://mail.google.com/*",
+    "https://gmail.googleapis.com/*"
   ],
+  oauth2: {
+    client_id: '469110029056-9d2gl5j3qv3j42718c3ij0psjo7k44u4.apps.googleusercontent.com',
+    scopes: [
+      'https://www.googleapis.com/auth/gmail.send',
+      'https://www.googleapis.com/auth/gmail.compose',
+      'https://www.googleapis.com/auth/gmail.modify',
+      'email',
+      'profile',
+      'openid',
+    ],
+  },
+  background: {
+    service_worker: 'src/background/index.ts',
+    type: 'module',
+  },
   content_scripts: [{
     js: ['src/content/gmail.tsx'],
     matches: ['https://mail.google.com/*'],
