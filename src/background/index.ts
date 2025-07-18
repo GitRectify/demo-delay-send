@@ -1,5 +1,3 @@
-// src/background/index.ts
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'SCHEDULE_EMAIL') {
         scheduleEmailViaGmailApi(message.emailData, message.scheduledTime)
@@ -32,14 +30,13 @@ function buildMimeMessage({ to, cc, bcc, subject, body }) {
     return headers + body;
 }
 
-// Schedules an email using Gmail API (requires 'scheduledTime' in seconds since epoch)
 async function scheduleEmailViaGmailApi(emailData, scheduledTime) {
     const token = await getOAuthToken();
     const mime = buildMimeMessage(emailData);
     const base64Encoded = btoa(unescape(encodeURIComponent(mime)))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-    // Create the draft
+    // 1. Create the draft
     const draftRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
         method: 'POST',
         headers: {
@@ -51,7 +48,7 @@ async function scheduleEmailViaGmailApi(emailData, scheduledTime) {
     if (!draftRes.ok) throw new Error('Failed to create draft: ' + (await draftRes.text()));
     const draft = await draftRes.json();
 
-    // Schedule the draft
+    // 2. Schedule the draft
     const sendRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${draft.id}/send`, {
         method: 'POST',
         headers: {
@@ -60,7 +57,6 @@ async function scheduleEmailViaGmailApi(emailData, scheduledTime) {
         },
         body: JSON.stringify({
             sendAt: scheduledTime, // seconds since epoch
-            // Optionally, you may need to use 'scheduledTime' or 'scheduleTime' depending on API version
         }),
     });
     if (!sendRes.ok) throw new Error('Failed to schedule email: ' + (await sendRes.text()));

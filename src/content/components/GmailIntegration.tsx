@@ -128,42 +128,11 @@ const GmailIntegration: React.FC = () => {
     sendButton.addEventListener("keydown", delayHandler, true);
   };
 
-  const getAllRecipients = (composeWindow: HTMLElement): string[] => {
-    const recipients: string[] = [];
-
-    // 1. Get all chips (role="listitem" inside the To field container)
-    // Gmail uses .vN[role="listitem"] for each recipient chip
-    const chipSelector = '.vN[role="listitem"]';
-    const chips = composeWindow.querySelectorAll(chipSelector);
-    chips.forEach(chip => {
-      // The email is usually in a <span class="g2"> or as textContent
-      const emailSpan = chip.querySelector('.g2');
-      if (emailSpan && emailSpan.textContent) {
-        recipients.push(emailSpan.textContent.trim());
-      } else if (chip.textContent) {
-        recipients.push(chip.textContent.trim());
-      }
-    });
-
-    // 2. Get the value from the input/textarea (for addresses being typed)
-    const input = composeWindow.querySelector('textarea[name="to"], input[name="to"]') as HTMLInputElement | null;
-    if (input && input.value) {
-      // Split by comma or semicolon, trim, and add any non-empty
-      input.value.split(/[,;]/).forEach(addr => {
-        const trimmed = addr.trim();
-        if (trimmed) recipients.push(trimmed);
-      });
-    }
-
-    // Remove duplicates and empty strings
-    return Array.from(new Set(recipients)).filter(Boolean);
-  }
-
   const getEmailInfo = (parentCompose: HTMLElement) => {
     console.log("[Email Magic: SendLock]: This is in getEmailInfo")
     try {
 
-      let recipients = GmailUtils.getAllRecipients(parentCompose)
+      let recipients = GmailUtils.getRecipientsFromField(parentCompose, 'To')
 
       // Subject
       // let subject = GmailUtils.getSubject()
