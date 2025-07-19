@@ -16,6 +16,32 @@ export const GmailSelectors = {
     'div[role="button"]:has(svg)'
   ],
 
+  saveAndCloseButton: [
+    // Most common: <img ... aria-label="Save & close" ...>
+    'img[aria-label="Save & close"]',
+    'img[alt="Save & close"]',
+    'img[data-tooltip*="Save & close"]',
+    // Sometimes a <div> or <button> with aria-label
+    'div[aria-label="Save & close"]',
+    'button[aria-label="Save & close"]',
+    // Sometimes just "Close" (older Gmail or popout)
+    'img[aria-label="Close"]',
+    'img[alt="Close"]',
+    'div[aria-label="Close"]',
+    'button[aria-label="Close"]',
+    // Sometimes with data-tooltip
+    'img[data-tooltip*="Save & close"]',
+    'div[data-tooltip*="Save & close"]',
+    'button[data-tooltip*="Save & close"]',
+    'img[data-tooltip*="Close"]',
+    'div[data-tooltip*="Close"]',
+    'button[data-tooltip*="Close"]',
+    // Fallback: class "Ha" (Gmail's close/save button)
+    'img.Ha',
+    'div.Ha',
+    'button.Ha',
+  ],
+
   // Compose window selectors (broader coverage)
   composeWindow: [
     '[role="dialog"]',
@@ -427,9 +453,9 @@ export const GmailUtils = {
 
     // Remove duplicates, empty strings, and invalid emails
     return Array.from(new Set(recipients)).filter(email =>
-      email && 
-      email.includes('@') && 
-      email.includes('.') && 
+      email &&
+      email.includes('@') &&
+      email.includes('.') &&
       !/\s/.test(email) &&
       email.length > 5 // Basic email validation
     );
@@ -453,5 +479,14 @@ export const GmailUtils = {
   // Check if undo send is available
   hasUndoSend(): boolean {
     return findElement(GmailSelectors.undoSend) !== null
+  },
+
+  findSaveAndCloseButton(composeWindow: HTMLElement): HTMLElement | null {
+    for (const sel of GmailSelectors.saveAndCloseButton) {
+      const btn = composeWindow.querySelector(sel);
+      if (btn) return btn as HTMLElement;
+    }
+    return null;
   }
+
 }

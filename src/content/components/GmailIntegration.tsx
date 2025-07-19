@@ -83,6 +83,62 @@ const GmailIntegration: React.FC = () => {
 
   const attachDelayHandler = (sendButton: HTMLElement) => {
     console.log("[Email Magic: SendLock]: This is in attachDelayHandeler")
+
+    const handler = async (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const target = e.target as HTMLElement
+      const composeWindow = getParentComposeWindow(target);
+      // const replyBox = document.querySelector('div[aria-label="Message Body"]');
+      if (composeWindow instanceof HTMLElement) {
+        composeWindow.blur();
+
+        const escEvent = new KeyboardEvent('keydown', {
+          key: 'Escape',
+          keyCode: 27,
+          which: 27,
+          bubbles: true,
+          cancelable: true
+        });
+
+        if(!composeWindow.dispatchEvent(escEvent)){
+          chrome.runtime.sendMessage({ type: 'IMPORT_DRAFT_CONTENT' }, (response) => {
+            if (response && response.success) {
+              // Use response.to, response.cc, response.subject, etc.
+              console.log(response.bodyText);
+            } else {
+              alert('Failed to import draft: ' + (response?.error || 'Unknown error'));
+            }
+          });
+          console.log("[Email Magic] Escape dispatched to compose window.");
+        }
+      }
+
+      // 2. Wait for Gmail to save the draft (adjust time as needed)
+      // setTimeout(() => {
+      //   // 3. Now use the Gmail API to list drafts and get the latest one
+      //   chrome.runtime.sendMessage({ type: 'GET_LATEST_DRAFT' }, (response) => {
+      //     if (response && response.success) {
+      //       // 4. Schedule/send the draft via API
+      //       chrome.runtime.sendMessage({
+      //         type: 'SCHEDULE_DRAFT',
+      //         draftId: response.draftId,
+      //         scheduledTime: Math.floor(Date.now() / 1000) + delayDuration // 1 hour from now
+      //       }, (scheduleResponse) => {
+      //         if (scheduleResponse && scheduleResponse.success) {
+      //           alert('Draft scheduled!');
+      //         } else {
+      //           alert('Failed to schedule draft: ' + (scheduleResponse?.error || 'Unknown error'));
+      //         }
+      //       });
+      //     } else {
+      //       alert('Failed to get latest draft: ' + (response?.error || 'Unknown error'));
+      //     }
+      //   });
+      // }, 2000); // Wait 2 seconds for Gmail to save the draft
+    }
+
     const delayHandler = (e: Event) => {
       const target = e.target as HTMLElement
       const parentCompose = getParentComposeWindow(target);
@@ -123,9 +179,9 @@ const GmailIntegration: React.FC = () => {
     };
 
     // Mouse click
-    sendButton.addEventListener("click", delayHandler, true);
+    sendButton.addEventListener("click", handler, true);
     // Keyboard: Enter, Space, Ctrl+Enter
-    sendButton.addEventListener("keydown", delayHandler, true);
+    sendButton.addEventListener("keydown", handler, true);
   };
 
   const getEmailInfo = (parentCompose: HTMLElement) => {
