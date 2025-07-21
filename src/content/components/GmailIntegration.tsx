@@ -10,15 +10,12 @@ import {
 
 interface DelayingEmail {
   id: string;
-  composeWindow: HTMLElement
+  draftId: string;
   recipient: string;
   subject: string;
   delayTime: number;
   remainingTime: number;
   startTime: number;
-  originalButton: HTMLElement;
-  noopClickHandler?: (e: Event) => void;
-  delayClickHandler?: (e: Event) => void;
 }
 
 const GmailIntegration: React.FC = () => {
@@ -84,104 +81,48 @@ const GmailIntegration: React.FC = () => {
   const attachDelayHandler = (sendButton: HTMLElement) => {
     console.log("[Email Magic: SendLock]: This is in attachDelayHandeler")
 
-    const handler = async (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
-
+    const sendLockHandler = (e: Event) => {
       const target = e.target as HTMLElement
       const composeWindow = getParentComposeWindow(target);
-      // const replyBox = document.querySelector('div[aria-label="Message Body"]');
-      if (composeWindow instanceof HTMLElement) {
-        composeWindow.blur();
-
-        const escEvent = new KeyboardEvent('keydown', {
-          key: 'Escape',
-          keyCode: 27,
-          which: 27,
-          bubbles: true,
-          cancelable: true
-        });
-
-        if(!composeWindow.dispatchEvent(escEvent)){
-          chrome.runtime.sendMessage({ type: 'IMPORT_DRAFT_CONTENT' }, (response) => {
-            if (response && response.success) {
-              // Use response.to, response.cc, response.subject, etc.
-              console.log(response.bodyText);
-            } else {
-              alert('Failed to import draft: ' + (response?.error || 'Unknown error'));
-            }
-          });
-          console.log("[Email Magic] Escape dispatched to compose window.");
-        }
-      }
-
-      // 2. Wait for Gmail to save the draft (adjust time as needed)
-      // setTimeout(() => {
-      //   // 3. Now use the Gmail API to list drafts and get the latest one
-      //   chrome.runtime.sendMessage({ type: 'GET_LATEST_DRAFT' }, (response) => {
-      //     if (response && response.success) {
-      //       // 4. Schedule/send the draft via API
-      //       chrome.runtime.sendMessage({
-      //         type: 'SCHEDULE_DRAFT',
-      //         draftId: response.draftId,
-      //         scheduledTime: Math.floor(Date.now() / 1000) + delayDuration // 1 hour from now
-      //       }, (scheduleResponse) => {
-      //         if (scheduleResponse && scheduleResponse.success) {
-      //           alert('Draft scheduled!');
-      //         } else {
-      //           alert('Failed to schedule draft: ' + (scheduleResponse?.error || 'Unknown error'));
-      //         }
-      //       });
-      //     } else {
-      //       alert('Failed to get latest draft: ' + (response?.error || 'Unknown error'));
-      //     }
-      //   });
-      // }, 2000); // Wait 2 seconds for Gmail to save the draft
-    }
-
-    const delayHandler = (e: Event) => {
-      const target = e.target as HTMLElement
-      const parentCompose = getParentComposeWindow(target);
-      console.log("===Compose===", parentCompose)
-      const emailInfo = getEmailInfo(parentCompose);
+      const emailInfo = getEmailInfo(composeWindow);
       if (emailInfo) {
         // Only handle keyboard events if they match expected keys
         if (e.type === "keydown") {
           const ke = e as KeyboardEvent;
           const isValidKey =
-            ke.key === "Enter" ||
-            ke.key === " " || // Space
-            ke.key === "Spacebar" || // Legacy browsers
-            (ke.key === "Enter" && (ke.ctrlKey || ke.metaKey));
-
+                            ke.key === "Enter" ||
+                            ke.key === " " || // Space
+                            ke.key === "Spacebar" || // Legacy browsers
+                            (ke.key === "Enter" && (ke.ctrlKey || ke.metaKey));
           if (!isValidKey) return; // Don't handle other keys
         }
 
         e.preventDefault();
         e.stopPropagation();
 
-        // Remove our custom click handler
-        sendButton.removeEventListener("click", delayHandler, true);
-        sendButton.removeEventListener("keydown", delayHandler, true);
+        if (composeWindow instanceof HTMLElement) {
+          const escEvent = new KeyboardEvent('keydown', {
+            key: 'Escape',
+            keyCode: 27,
+            which: 27,
+            bubbles: true,
+            cancelable: true
+          });
 
-        // Replace with empty handler to neutralize button
-        const noopHandler = (e: Event) => {
-          e.preventDefault();
-          e.stopPropagation();
-        };
+          if(!composeWindow.dispatchEvent(escEvent)){
+            const draftInput = composeWindow.querySelector('input[name="draft"]');
+            const draftId = (draftInput as HTMLInputElement).value.split('#msg-a:')[1]
 
-        sendButton.addEventListener("click", noopHandler, true);
-        sendButton.addEventListener("keydown", noopHandler, true);
-        (sendButton as HTMLElement).innerText = "Delaying...";
-
-        addDelayEmail(emailInfo, sendButton, noopHandler, delayHandler);
+            addDelayEmail(draftId);
+          }
+        }
       }
     };
 
     // Mouse click
-    sendButton.addEventListener("click", handler, true);
+    sendButton.addEventListener("click", sendLockHandler, true);
     // Keyboard: Enter, Space, Ctrl+Enter
-    sendButton.addEventListener("keydown", handler, true);
+    sendButton.addEventListener("keydown", sendLockHandler, true);
   };
 
   const getEmailInfo = (parentCompose: HTMLElement) => {
@@ -210,7 +151,6 @@ const GmailIntegration: React.FC = () => {
           if (content) break;
         }
       }
-      console.log(`===recipient===${recipients}\n===subject===${subject}`)
       return { parentCompose, recipient: recipients.join(', '), subject, content };
     } catch (error) {
       console.error("[Email Magic: SendLock] Error extracting email data:", error);
@@ -218,70 +158,29 @@ const GmailIntegration: React.FC = () => {
     }
   };
 
-  const getEmailData = (composeWindow: HTMLElement) => {
-    // To
-    const toInput = composeWindow.querySelector('textarea[name="to"]') as HTMLInputElement | null;
-    const to = toInput?.value || '';
-
-    // CC
-    const ccInput = composeWindow.querySelector('textarea[name="cc"]') as HTMLInputElement | null;
-    const cc = ccInput?.value || '';
-
-    // BCC
-    const bccInput = composeWindow.querySelector('textarea[name="bcc"]') as HTMLInputElement | null;
-    const bcc = bccInput?.value || '';
-
-    // Subject
-    const subjectInput = composeWindow.querySelector('input[name="subjectbox"]') as HTMLInputElement | null;
-    const subject = subjectInput?.value || '';
-
-    // Body (HTML)
-    const bodyDiv = composeWindow.querySelector('[aria-label="Message Body"]') as HTMLElement | null;
-    const body = bodyDiv?.innerHTML || '';
-
-    return { to, cc, bcc, subject, body };
-  };
-
-  const addDelayEmail = ( emailInfo: any, originalButton: HTMLElement, noopHandler: EventListener, delayHandler: EventListener ) => {
-    console.log("[Email Magic: SendLock]: This is in addDelayEmail")
-
-    // // When user hits send, instead of simulating a click:
-    // const emailData = getEmailData(emailInfo.composeWindow)
-    // const scheduledTime = Math.floor(Date.now() / 1000) + delayDuration; // Unix timestamp
-
-    // chrome.runtime.sendMessage(
-    //   { type: 'SCHEDULE_EMAIL', emailData, scheduledTime },
-    //   (response) => {
-    //     if (response && response.success) {
-    //       // Show premium toast/snackbar
-    //       // showToast('Email scheduled for ' + new Date(scheduledTime * 1000).toLocaleTimeString());
-    //       // Optionally, add to Outbox UI
-    //     } else {
-    //       // Show error toast
-    //       // showToast('Failed to schedule email: ' + (response?.error || 'Unknown error'), 'error');
-    //     }
-    //   }
-    // );
-
+  const addDelayEmail = ( draftId: string ) => {
     const emailId = `email-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const startTime = Date.now();
 
-    const delayingEmail: DelayingEmail = {
-      id: emailId,
-      composeWindow: emailInfo.composeWindow,
-      recipient: emailInfo.recipient,
-      subject: emailInfo.subject,
-      delayTime: delayDuration,
-      remainingTime: delayDuration,
-      startTime: startTime,
-      originalButton: originalButton,
-      noopClickHandler: noopHandler,
-      delayClickHandler: delayHandler,
-    };
+    chrome.runtime.sendMessage({ type: "GET_DRAFT_CONTENT", draftId: draftId}, (response) => {
+      if (response && response.success) {
+        const delayingEmail: DelayingEmail = {
+          id: emailId,
+          draftId: draftId,
+          recipient: `To: ${response.to}\nCc: ${response.cc}\nBcc: ${response.bcc}`,
+          subject: response.subject,
+          delayTime: delayDuration,
+          remainingTime: delayDuration,
+          startTime: startTime,
+        };
+        setDelayingEmails((prev) => [...prev, delayingEmail]);
+        console.log(`to-${response.to}`)
+      } else {
+        alert('Failed to import draft: ' + (response?.error || 'Unknown error'));
+      }
+    })
 
-    setDelayingEmails((prev) => [...prev, delayingEmail]);
-
-    chrome.storage.sync.set({ delayingEmails: delayingEmails });
+    // chrome.storage.sync.set({ delayingEmails: delayingEmails });
 
     const countdown = setInterval(() => {
       setDelayingEmails((prev) => {
@@ -306,33 +205,46 @@ const GmailIntegration: React.FC = () => {
   };
 
   const sendEmail = (email: DelayingEmail) => {
-    console.log("[Email Magic: SendLock]: This is in sendEmail")
+    console.log("[Email Magic: SendLock]: This is in sendEmail");
+    console.log("draftId: ", email.draftId);
     try {
-      // Remove our handler so we don't intercept our own send
-      if (email.noopClickHandler) {
-        email.originalButton.removeEventListener("click", email.noopClickHandler, true);
-        email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
-      }
-      delete email.originalButton.dataset.emailMagicHandled;
+      chrome.runtime.sendMessage({ type: "GET_LIST_DRAFT"}, (response) => {
+        if (response && response.success) {
+          console.log(JSON.stringify(response.result))
+        } else {
+          console.log('Failed to import draft: ' + (response?.error || 'Unknown error'));
+        }
+      })
+      chrome.runtime.sendMessage({ type: "SEND_DRAFT", draftId: email.draftId}, (response) => {
+        if (response && response.success) {
+          chrome.storage.sync.get(["emailStats"], (result) => {
+            const stats = result.emailStats || { delayed: 0, canceled: 0, edited: 0 };
+            stats.delayed += 1;
+            chrome.storage.sync.set({ emailStats: stats });
+          });
+          console.log(`[Email Magic: SendLock] Email sent to ${response.result} after delay`)
+        } else {
+          console.log('Failed to import draft: ' + (response?.error || 'Unknown error'));
+        }
+      })
+      // // Remove our handler so we don't intercept our own send
+      // if (email.noopClickHandler) {
+      //   email.originalButton.removeEventListener("click", email.noopClickHandler, true);
+      //   email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
+      // }
+      // delete email.originalButton.dataset.emailMagicHandled;
 
-      // Dispatch a real click event
-      const clickEvent = new MouseEvent("click", {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-      });
-      email.originalButton.dispatchEvent(clickEvent);
+      // // Dispatch a real click event
+      // const clickEvent = new MouseEvent("click", {
+      //   bubbles: true,
+      //   cancelable: true,
+      //   view: window,
+      // });
+      // email.originalButton.dispatchEvent(clickEvent);
 
-      email.originalButton.innerText = "Send";
+      // email.originalButton.innerText = "Send";
 
       // Stats, etc...
-      chrome.storage.sync.get(["emailStats"], (result) => {
-        const stats = result.emailStats || { delayed: 0, canceled: 0, edited: 0 };
-        stats.delayed += 1;
-        chrome.storage.sync.set({ emailStats: stats });
-      });
-
-      console.log("[Email Magic: SendLock] Email sent after delay");
     } catch (error) {
       console.error("[Email Magic: SendLock] Error sending email:", error);
     }
@@ -341,15 +253,15 @@ const GmailIntegration: React.FC = () => {
   const cancelEmail = (email: DelayingEmail) => {
     console.log("[SendLock: SendLock]: This is in cancelEmail")
     try {
-      if (email.noopClickHandler) {
-        email.originalButton.removeEventListener("click", email.noopClickHandler, true);
-        email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
-      }
-      if (email.delayClickHandler) {
-        email.originalButton.addEventListener("click", email.delayClickHandler, true);
-        email.originalButton.addEventListener("keydown", email.delayClickHandler, true);
-      }
-      email.originalButton.innerText = "Send";
+      // if (email.noopClickHandler) {
+      //   email.originalButton.removeEventListener("click", email.noopClickHandler, true);
+      //   email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
+      // }
+      // if (email.delayClickHandler) {
+      //   email.originalButton.addEventListener("click", email.delayClickHandler, true);
+      //   email.originalButton.addEventListener("keydown", email.delayClickHandler, true);
+      // }
+      // email.originalButton.innerText = "Send";
 
       setDelayingEmails((prev) =>
         prev.filter((dEmail) => dEmail.id !== email.id)
@@ -368,15 +280,15 @@ const GmailIntegration: React.FC = () => {
   const editEmail = (email: DelayingEmail) => {
     console.log("[Email Magic: SendLock]: This is in editEmail")
     try {
-      if (email.noopClickHandler) {
-        email.originalButton.removeEventListener("click", email.noopClickHandler, true);
-        email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
-      }
-      if (email.delayClickHandler) {
-        email.originalButton.addEventListener("click", email.delayClickHandler, true);
-        email.originalButton.addEventListener("keydown", email.delayClickHandler, true);
-      }
-      email.originalButton.innerText = "Send";
+      // if (email.noopClickHandler) {
+      //   email.originalButton.removeEventListener("click", email.noopClickHandler, true);
+      //   email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
+      // }
+      // if (email.delayClickHandler) {
+      //   email.originalButton.addEventListener("click", email.delayClickHandler, true);
+      //   email.originalButton.addEventListener("keydown", email.delayClickHandler, true);
+      // }
+      // email.originalButton.innerText = "Send";
 
       setDelayingEmails((prev) =>
         prev.filter((dEmail) => dEmail.id !== email.id)
@@ -411,7 +323,7 @@ const GmailIntegration: React.FC = () => {
             </div>
           </div>
           <div className="email-preview">
-            <div className="email-text">To: {email.recipient}</div>
+            <div className="email-text">{email.recipient}</div>
             <div className="email-text">Subject: {email.subject}</div>
           </div>
         </div>

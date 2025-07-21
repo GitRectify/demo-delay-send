@@ -1,29 +1,15 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'IMPORT_DRAFT_CONTENT') {
+    if (message.type === 'GET_DRAFT_CONTENT') {
         (async () => {
             try {
-                const draftId = await getLatestDraftId();
-                const message = await getDraftContent(draftId);
-                const { to, cc, bcc, subject, bodyHtml, bodyText, attachments, messageId } = parseDraftMessage(message);
+                const draftDetails = await getDraft(message.draftId);
+                const { to, cc, bcc, subject, bodyHtml, bodyText, attachments, messageId } = parseDraftMessage(draftDetails.message);
 
                 // Optionally fetch attachment data
                 for (const att of attachments) {
                     att.data = await getAttachment(messageId, att.data);
                 }
-
                 sendResponse({ success: true, to, cc, bcc, subject, bodyHtml, bodyText, attachments });
-            } catch (error) {
-                sendResponse({ success: false, error: error.toString() });
-            }
-        })();
-        return true; // Indicates async response
-    }
-
-    if (message.type === 'GET_LATEST_DRAFT_ID') {
-        (async () => {
-            try {
-                const draftId = await getLatestDraftId();
-                sendResponse({ success: true, draftId });
             } catch (error) {
                 sendResponse({ success: false, error: error.toString() });
             }
@@ -42,7 +28,93 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         })();
         return true; // Indicates async response
     }
+
+    if (message.type === 'GET_LIST_DRAFT') {
+        (async () => {
+            try {
+                const result = await listDrafts();
+                sendResponse({ success: true, result });
+            } catch (error) {
+                sendResponse({ success: false, error: error.toString() });
+            }
+        })();
+        return true; // Indicates async response
+    }
 });
+
+async function listDrafts() {
+    const oauthToken = await getOAuthToken();
+    const response = await fetch(
+        'https://gmail.googleapis.com/gmail/v1/users/me/drafts',
+        {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${oauthToken}`,
+                'Accept': 'application/json'
+            }
+        }
+    );
+    if (!response.ok) {
+        throw new Error('Failed to list drafts: ' + response.statusText);
+    }
+    const data = await response.json();
+    // Returns an array of draft objects (id, message)
+    return data.drafts || [];
+}
+
+// What does listDrafts() return?
+// [
+//     {
+//         "id": "r-1234567890abcdef",
+//         "message": {
+//             "id": "1234567890abcdef",
+//             "threadId": "abcdef1234567890"
+//         }
+//     },
+//     ...
+// ]
+// The message object here is partial—it usually only contains id and threadId, not the full message content, headers, or body.
+
+// What does getDraft(draftId) return?
+// {
+//     "id": "r-1234567890abcdef",
+//     "message": {
+//         "id": "1234567890abcdef",
+//         "threadId": "abcdef1234567890",
+//         "labelIds": [...],
+//         "snippet": "...",
+//         "historyId": "...",
+//         "internalDate": "...",
+//         "payload": { ... }, // full MIME structure
+//         "sizeEstimate": 1234
+//     }
+// }
+
+// Use Case	                           listDrafts()	getDraft(draftId)
+// Get draft IDs	                        ✅	        ❌
+// Get threadId	                            ✅	        ✅
+// Get subject, to, cc, body, etc.	        ❌	        ✅
+// Get attachments	                        ❌	        ✅
+
+async function getDraft(draftId) {
+    const oauthToken = await getOAuthToken();
+    const response = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/drafts/${draftId}`,
+        {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${oauthToken}`,
+                'Accept': 'application/json'
+            }
+        }
+    );
+    if (!response.ok) {
+        throw new Error('Failed to get draft: ' + response.statusText);
+    }
+    const data = await response.json();
+    // Returns the draft object with message and threadId
+    return data;
+}
 
 async function getLatestDraftId() {
     const token = await getOAuthToken();
@@ -53,16 +125,6 @@ async function getLatestDraftId() {
     const data = await res.json();
     if (!data.drafts || !data.drafts.length) throw new Error('No drafts found');
     return data.drafts[0].id;
-}
-
-async function getDraftContent(draftId: string) {
-    const token = await getOAuthToken();
-    const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${draftId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error('Failed to fetch draft: ' + (await res.text()));
-    const draft = await res.json();
-    return draft.message; // This contains the full email content in MIME format
 }
 
 function parseDraftMessage(message: any) {
@@ -131,19 +193,24 @@ async function getAttachment(messageId: string, attachmentId: string) {
     return decodeBase64Url(data.data); // This is the raw file content (base64-decoded)
 }
 
+// All Gmail users (both Google Workspace and personal @gmail.com accounts) can use this endpoint to send drafts immediately.
 async function sendDraft(draftId: string) {
     const token = await getOAuthToken();
-    const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${draftId}/send`, {
+    const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/send`, {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+            id: draftId
+        })
     });
     if (!res.ok) throw new Error('Failed to send draft: ' + (await res.text()));
     return await res.json();
 }
 
+// The sendAt parameter for scheduling emails via the Gmail API is only available for Google Workspace (paid business/education) accounts.
 async function scheduleDraft(draftId: string, scheduledTime: number) {
     const token = await getOAuthToken();
     const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${draftId}/send`, {
