@@ -9,6 +9,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 for (const att of attachments) {
                     att.data = await getAttachment(messageId, att.data);
                 }
+
+                // Move draft to SendLock label and not remove from Drafts
+                await moveDraftToSendLock(messageId)
+
                 sendResponse({ success: true, to, cc, bcc, subject, bodyHtml, bodyText, attachments });
             } catch (error) {
                 sendResponse({ success: false, error: error.toString() });
@@ -239,4 +243,52 @@ async function getOAuthToken(interactive = true): Promise<string> {
             }
         });
     });
+}
+
+// Create a label if it doesn't exist
+async function ensureSendLockLabel(): Promise<string> {
+    const token = await getOAuthToken();
+    // Get all labels
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to fetch labels: ' + (await res.text()));
+    const data = await res.json();
+    const existing = data.labels.find((l: any) => l.name === 'SendLock');
+    if (existing) return existing.id;
+    // Create label
+    const createRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: 'SendLock',
+            labelListVisibility: 'labelShow',
+            messageListVisibility: 'show',
+        }),
+    });
+    if (!createRes.ok) throw new Error('Failed to create SendLock label: ' + (await createRes.text()));
+    const label = await createRes.json();
+    return label.id;
+}
+
+// Move a draft to SendLock label and not remove from Drafts
+async function moveDraftToSendLock(messageId: string): Promise<void> {
+    const token = await getOAuthToken();
+    const sendLockLabelId = await ensureSendLockLabel();
+    // Remove DRAFT label, add SendLock
+    const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/modify`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            addLabelIds: [sendLockLabelId],
+            // removeLabelIds: ['DRAFT'],
+        }),
+    });
+    if (!res.ok) throw new Error('Failed to move draft to SendLock: ' + (await res.text()));
 }
