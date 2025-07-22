@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Shield, Clock, X } from "lucide-react";
+import ReactDOM from "react-dom/client";
 import {
   GmailSelectors,
   findElement,
@@ -7,12 +8,12 @@ import {
   matchesAnySelector,
   GmailUtils,
 } from "../utils/gmailSelectors";
+import NotificationBanner from "./NotificationBanner";
 
-interface DelayingEmail {
-  id: string;
+// import "../Content.css"
+
+export interface DelayingEmail {
   draftId: string;
-  recipient: string;
-  subject: string;
   delayTime: number;
   remainingTime: number;
   startTime: number;
@@ -20,6 +21,7 @@ interface DelayingEmail {
 
 const GmailIntegration: React.FC = () => {
   const [delayingEmails, setDelayingEmails] = useState<DelayingEmail[]>([]);
+  const [delayingEmail, setDelayingEmail] = useState<DelayingEmail | null>(null);
   const [delayDuration, setDelayDuration] = useState(30); // 30 seconds default
   const observerRef = useRef<MutationObserver | null>(null);
   const notificationObserverRef = useRef<MutationObserver | null>(null);
@@ -39,28 +41,36 @@ const GmailIntegration: React.FC = () => {
     });
 
     observerRef.current = observeSendButtons();
-
     notificationObserverRef.current = observeGmailHeader();
 
     return () => {
       observerRef.current?.disconnect();
+      notificationObserverRef.current?.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    chrome.storage.local.set({ delayingEmails });
+  }, [delayingEmails]);
 
   // Helper: check if a button is inside a compose window
   const getParentComposeWindow = (button: HTMLElement) => {
     let el: HTMLElement | null = button;
     while (el) {
-      if (
-        el.matches &&
-        GmailSelectors.composeWindow.some((sel) => el.matches(sel))
-      ) {
-        return el;
-      }
+      if (el.matches && GmailSelectors.composeWindow.some((sel) => el.matches(sel))) return el;
       el = el.parentElement;
     }
     return null;
   };
+
+  const setCompose = (compose: HTMLElement, emailState: DelayingEmail) => {
+    // const composeId = compose.id
+    // const root = ReactDOM.createRoot(document.getElementById(composeId));
+    // root.render(<EmailState email={emailState} />);
+    compose.style.visibility = "hidden";
+    setDelayingEmail(emailState)
+    // compose
+  }
 
   const observeSendButtons = (): MutationObserver => {
     const observer = new MutationObserver(() => {
@@ -73,7 +83,7 @@ const GmailIntegration: React.FC = () => {
             const parentCompose = getParentComposeWindow(button);
             if (parentCompose) {
               button.dataset.emailMagicHandled = "true";
-              attachDelayHandler(button);
+              attachDelayHandler(parentCompose, button);
             }
           }
         });
@@ -86,55 +96,65 @@ const GmailIntegration: React.FC = () => {
 
   const observeGmailHeader = (): MutationObserver => {
     const observer = new MutationObserver(() => {
-      const topRight = document.querySelector("div.gb_a.gb_qd.gb_Mc");
-      if (topRight && !document.getElementById("sendlock-status-bar")) {
+      const topRight = document.querySelector("div.gb_a.gb_qd");
+      if (topRight && !document.getElementById("sendlock-banner-root")) {
         injectAfterGmailTopRight();
       }
     });
+
     observer.observe(document.body, { childList: true, subtree: true });
     return observer;
   };
 
   const injectAfterGmailTopRight = () => {
-    const target = document.querySelector("div.gb_a.gb_qd.gb_Mc");
-    if (!target || document.getElementById("sendlock-status-bar")) return;
+    const target = document.querySelector("div.gb_a.gb_qd");
+    if (!target || document.getElementById("sendlock-banner-root")) return;
 
     const wrapper = document.createElement("div");
-    wrapper.id = "sendlock-status-bar";
-    wrapper.style.cssText = `
-      background: linear-gradient(to right, #6366f1, #8b5cf6);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      margin-left: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-    `;
+    wrapper.id = "sendlock-banner-root";
 
-    wrapper.innerText = `⏳ Email Magic: ${delayingEmails.length} queued`;
+    wrapper.style.cursor = "pointer";
 
     // Click to open SendLock folder
     wrapper.onclick = () => {
       window.location.href = "https://mail.google.com/mail/u/0/#label/SendLock";
     };
 
-    target.parentNode.insertBefore(wrapper, target.nextSibling);
-  }
-
-  // Wait for Gmail to fully load
-  const observer = new MutationObserver(() => {
-    const topRight = document.querySelector("div.gb_a.gb_qd.gb_Mc");
-    if (topRight && !document.getElementById("sendlock-status-bar")) {
-      injectAfterGmailTopRight();
+    wrapper.onmouseup = () => {
+      window.location.href = "https://mail.google.com/mail/u/0/#label/SendLock";
     }
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
 
-  const attachDelayHandler = (sendButton: HTMLElement) => {
+    target.parentNode.insertBefore(wrapper, target.nextSibling);
+  };
+
+  const attachDelayHandler = (parentCompose: HTMLElement, sendButton: HTMLElement) => {
     console.log("[Email Magic: SendLock]: This is in attachDelayHandeler");
+
+    chrome.storage.local.get(["delayingEmails"], (result) => {
+      console.log("Loaded from storage:", result.delayingEmails);
+      if (result.delayingEmails) {
+        const draftInput = parentCompose.querySelector('input[name="draft"]');
+        const draftId = (draftInput as HTMLInputElement).value.split("#msg-a:")[1];
+        console.log(parentCompose, "<===compose===>", draftInput)
+        console.log(parentCompose, "<===delayingEmails===>", delayingEmails.length)
+        result.delayingEmails.map((email) => {
+          if (email.draftId === draftId) {
+            console.log(`${email.draftId}=VS=${draftId}`)
+            setCompose(parentCompose, email);
+          }
+        })
+      };
+    });
+    // const draftInput = parentCompose.querySelector('input[name="draft"]');
+    // const draftId = (draftInput as HTMLInputElement).value.split("#msg-a:")[1];
+    // console.log(parentCompose, "<===compose===>", draftInput)
+    // console.log(parentCompose, "<===delayingEmails===>", delayingEmails.length)
+    // delayingEmails.map((email) => {
+    //   if (email.draftId === draftId) {
+    //     console.log(`${email.draftId}=VS=${draftId}`)
+    //     setCompose(parentCompose, email);
+    //   }
+    // })
 
     const sendLockHandler = (e: Event) => {
       const target = e.target as HTMLElement;
@@ -154,6 +174,7 @@ const GmailIntegration: React.FC = () => {
 
         e.preventDefault();
         e.stopPropagation();
+        () => window.location.href = "https://mail.google.com/mail/u/0/#label/SendLock";
 
         if (composeWindow instanceof HTMLElement) {
           const escEvent = new KeyboardEvent("keydown", {
@@ -165,14 +186,24 @@ const GmailIntegration: React.FC = () => {
           });
 
           if (!composeWindow.dispatchEvent(escEvent)) {
-            const draftInput = composeWindow.querySelector(
-              'input[name="draft"]'
-            );
-            const draftId = (draftInput as HTMLInputElement).value.split(
-              "#msg-a:"
-            )[1];
+            const draftInput = composeWindow.querySelector('input[name="draft"]');
+            const draftId = (draftInput as HTMLInputElement).value.split("#msg-a:")[1];
 
-            addDelayEmail(draftId);
+            chrome.storage.local.get(["delayDuration"], (result) => {
+              if (result.delayDuration) {
+                const delayTime = result.delayDuration
+                const delayingEmail: DelayingEmail = {
+                  draftId: draftId,
+                  delayTime: delayTime,
+                  remainingTime: delayTime,
+                  startTime: Date.now(),
+                };
+                setDelayingEmails((prev) => [...prev, delayingEmail]);
+                setCompose(composeWindow, delayingEmail)
+                // composeWindow.style.visibility = "hidden";
+                addDelayEmail(draftId);
+              }
+            });
           }
         }
       }
@@ -225,33 +256,20 @@ const GmailIntegration: React.FC = () => {
   };
 
   const addDelayEmail = (draftId: string) => {
-    const emailId = `email-${Date.now()}-${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
-    const startTime = Date.now();
-
-    chrome.runtime.sendMessage(
-      { type: "GET_DRAFT_CONTENT", draftId: draftId },
-      (response) => {
-        if (response && response.success) {
-          const delayingEmail: DelayingEmail = {
-            id: emailId,
-            draftId: draftId,
-            recipient: `To: ${response.to}\nCc: ${response.cc}\nBcc: ${response.bcc}`,
-            subject: response.subject,
-            delayTime: delayDuration,
-            remainingTime: delayDuration,
-            startTime: startTime,
-          };
-          setDelayingEmails((prev) => [...prev, delayingEmail]);
-          console.log(`to-${response.to}`);
-        } else {
-          alert(
-            "Failed to import draft: " + (response?.error || "Unknown error")
-          );
+    setTimeout(() => {
+      chrome.runtime.sendMessage(
+        { type: "GET_DRAFT_CONTENT", draftId: draftId },
+        (response) => {
+          if (response && response.success) {
+            console.log(`to-${response.to}`);
+          } else {
+            alert(
+              "Failed to import draft: " + (response?.error || "Unknown error")
+            );
+          }
         }
-      }
-    );
+      );
+    }, 4500); // 2000 milliseconds = 2 seconds
 
     // chrome.storage.sync.set({ delayingEmails: delayingEmails });
 
@@ -259,9 +277,9 @@ const GmailIntegration: React.FC = () => {
       setDelayingEmails((prev) => {
         const updated = prev
           .map((email) => {
-            if (email.id === emailId) {
+            if (email.draftId === draftId) {
               const elapsed = (Date.now() - email.startTime) / 1000;
-              const remaining = delayDuration - elapsed;
+              const remaining = email.delayTime - elapsed;
               if (remaining <= 0) {
                 clearInterval(countdown);
                 sendEmail(email);
@@ -281,15 +299,6 @@ const GmailIntegration: React.FC = () => {
     console.log("[Email Magic: SendLock]: This is in sendEmail");
     console.log("draftId: ", email.draftId);
     try {
-      chrome.runtime.sendMessage({ type: "GET_LIST_DRAFT" }, (response) => {
-        if (response && response.success) {
-          console.log(JSON.stringify(response.result));
-        } else {
-          console.log(
-            "Failed to import draft: " + (response?.error || "Unknown error")
-          );
-        }
-      });
       chrome.runtime.sendMessage(
         { type: "SEND_DRAFT", draftId: email.draftId },
         (response) => {
@@ -350,7 +359,7 @@ const GmailIntegration: React.FC = () => {
       // email.originalButton.innerText = "Send";
 
       setDelayingEmails((prev) =>
-        prev.filter((dEmail) => dEmail.id !== email.id)
+        prev.filter((dEmail) => dEmail.draftId !== email.draftId)
       );
 
       chrome.storage.sync.get(["emailStats"], (result) => {
@@ -381,7 +390,7 @@ const GmailIntegration: React.FC = () => {
       // email.originalButton.innerText = "Send";
 
       setDelayingEmails((prev) =>
-        prev.filter((dEmail) => dEmail.id !== email.id)
+        prev.filter((dEmail) => dEmail.draftId !== email.draftId)
       );
 
       chrome.storage.sync.get(["emailStats"], (result) => {
@@ -398,9 +407,34 @@ const GmailIntegration: React.FC = () => {
     }
   };
 
-  return (
-    <div className="container">
-      {delayingEmails.map((email) => (
+  // const element = document.getElementById("sendlock-banner-root")
+  // const rect = element.getBoundingClientRect()
+
+  // Wait for container injected by content script
+  const interval = setInterval(() => {
+    const container = document.getElementById("sendlock-banner-root");
+    if (container) {
+      const root = ReactDOM.createRoot(container);
+      // root.render(<NotificationBanner emailCount={1}/>);
+      root.render(
+        <NotificationBanner
+          emailCount={delayingEmails.length}
+          delayTime={
+            delayingEmails.length
+              ? Math.ceil(
+                  delayingEmails[delayingEmails.length - 1].remainingTime
+                )
+              : 0
+          }
+        />
+      );
+      clearInterval(interval);
+    }
+  }, 500);
+
+  const EmailState = (email: any) => {
+    return (
+      <div className="container">
         <div key={email.id} className="indicator">
           <div className="delay-content">
             <Shield size={16} style={{ color: "#3b82f6" }} />
@@ -427,12 +461,47 @@ const GmailIntegration: React.FC = () => {
             </div>
           </div>
           <div className="email-preview">
-            <div className="email-text">{email.recipient}</div>
-            <div className="email-text">Subject: {email.subject}</div>
+            <div className="email-text">{'email.recipient'}</div>
+            <div className="email-text">Subject: {'email.subject'}</div>
           </div>
         </div>
-      ))}
-    </div>
+      </div>
+    );
+  }
+
+  return (<></>
+      // <div className="container">
+      //     <div key={delayingEmail.draftId} className="indicator">
+      //       <div className="delay-content">
+      //         <Shield size={16} style={{ color: "#3b82f6" }} />
+      //         <span
+      //           style={{ fontWeight: 600, color: "#1f2937", fontSize: "14px" }}
+      //         >
+      //           {Math.ceil(delayingEmail.remainingTime)}s
+      //         </span>
+      //         <div className="delay-actions">
+      //           <button
+      //             onClick={() => editEmail(delayingEmail)}
+      //             className="button edit"
+      //             title="Edit email"
+      //           >
+      //             <Clock size={14} />
+      //           </button>
+      //           <button
+      //             onClick={() => cancelEmail(delayingEmail)}
+      //             className="button cancel"
+      //             title="Cancel send"
+      //           >
+      //             <X size={14} />
+      //           </button>
+      //         </div>
+      //       </div>
+      //       <div className="email-preview">
+      //         {/* <div className="email-text">{email.recipient}</div>
+      //         <div className="email-text">Subject: {email.subject}</div> */}
+      //       </div>
+      //     </div>
+      // </div>
   );
 };
 

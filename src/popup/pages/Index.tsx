@@ -26,7 +26,7 @@ const Index = () => {
         'delayEnabled',
         'delayDuration',
         'activeTab',
-        'isAuthenticated',
+        'qAuthToken',
       ]);
 
       // Theme
@@ -53,8 +53,8 @@ const Index = () => {
       }
 
       // Auth state
-      if (typeof result.isAuthenticated === 'boolean') {
-        setIsAuthenticated(result.isAuthenticated);
+      if (typeof result.qAuthToken === 'boolean') {
+        setIsAuthenticated(result.qAuthToken);
       }
     })();
   }, []);
@@ -81,9 +81,20 @@ const Index = () => {
     await chrome.storage.local.set({ activeTab: value });
   };
 
-  const handleAuthChange = async (authenticated: boolean) => {
-    setIsAuthenticated(authenticated);
-    await chrome.storage.local.set({ isAuthenticated: authenticated });
+  const handleAuthChange = async () => {
+    chrome.runtime.sendMessage(
+      { type: "Q_AUTH_TOKEN", },
+      (response) => {
+        if (response && response.success) {
+          setIsAuthenticated(response.success);
+          chrome.storage.local.set({ qAuthToken: response.qAuthToken });
+        } else {
+          alert(
+            "Failed to import draft: " + (response?.error || "Unknown error")
+          );
+        }
+      }
+    );
   };
 
   const formatDelay = (seconds: number) => {
@@ -124,7 +135,7 @@ const Index = () => {
                 >
                   {isDarkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-slate-600" />}
                 </Button>
-                <Button variant="ghost" size="sm" className="hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300">
+                <Button variant="ghost" size="sm" onClick={handleAuthChange} className="hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300">
                   <User className="w-4 h-4" />
                 </Button>
               </div>

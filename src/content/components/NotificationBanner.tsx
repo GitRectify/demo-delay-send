@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
-import { Clock, Mail, Sparkles } from "lucide-react";
+import { Clock, Mail, Pointer, Sparkles } from "lucide-react";
+
+import "../Content.css";
 
 interface NotificationBannerProps {
   emailCount?: number;
+  delayTime?: number;
   isActive?: boolean;
 }
 
-const NotificationBanner = ({ emailCount = 3, isActive = true }: NotificationBannerProps) => {
+const NotificationBanner = ({
+  emailCount = 3,
+  delayTime = 60,
+  isActive = true,
+}: NotificationBannerProps) => {
   const [timeLeft, setTimeLeft] = useState({ minutes: 15, seconds: 30 });
 
   useEffect(() => {
@@ -26,54 +33,51 @@ const NotificationBanner = ({ emailCount = 3, isActive = true }: NotificationBan
     return () => clearInterval(timer);
   }, [isActive]);
 
-  const formatTime = (minutes: number, seconds: number) => {
-    return `${minutes.toString().padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}`;
+  const formatTime = (seconds: number) => {
+    return `${parseInt((seconds / 60).toString())}:${parseInt(
+      (seconds % 60).toString()
+    )}`;
   };
 
   if (!isActive) return null;
 
   return (
-    <div className="w-full bg-gradient-magic shadow-magic border-b border-primary/20 relative overflow-hidden">
-      {/* Animated background glow */}
-      <div className="absolute inset-0 bg-gradient-glow opacity-50 animate-pulse" />
+    <>
+      {emailCount ? (
+        <div className="sendlock-bar">
+          {/* Animated background glow */}
+          <div className="sendlock-glow" />
 
-      {/* Main content */}
-      <div className="relative z-10 px-4 py-3 flex items-center justify-between max-w-7xl mx-auto">
-        {/* Left side - Brand */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-primary-foreground">
-            <Sparkles className="h-5 w-5 animate-pulse" />
-            <span className="font-semibold text-lg tracking-wide">
-              Email Magic: SendLock
-            </span>
+          {/* Main content */}
+          <div className="sendlock-content">
+            {/* Left side - Brand */}
+            <div className="sendlock-brand">
+              <div className="sendlock-brand-name">
+                <span>Email Magic: SendLock</span>
+              </div>
+            </div>
+
+            {/* Right side - Stats and Timer */}
+            <div className="sendlock-status">
+              {/* Email count */}
+              <div className="sendlock-email-count">
+                <span>
+                  {emailCount} email{emailCount !== 1 ? "s" : ""} queued
+                </span>
+              </div>
+
+              {/* Timer */}
+              <div className="sendlock-timer">
+                <span>{formatTime(delayTime)}</span>
+              </div>
+            </div>
           </div>
+
+          {/* Subtle bottom border glow */}
+          <div className="sendlock-bottom-glow" />
         </div>
-
-        {/* Right side - Stats and Timer */}
-        <div className="flex items-center gap-6">
-          {/* Email count */}
-          <div className="flex items-center gap-2 text-primary-foreground/90">
-            <Mail className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              {emailCount} email{emailCount !== 1 ? "s" : ""} queued
-            </span>
-          </div>
-
-          {/* Timer */}
-          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/20">
-            <Clock className="h-4 w-4 text-primary-foreground" />
-            <span className="text-primary-foreground font-mono text-sm font-medium">
-              {formatTime(timeLeft.minutes, timeLeft.seconds)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Subtle bottom border glow */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-    </div>
+      ) : null}
+    </>
   );
 };
 

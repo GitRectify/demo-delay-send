@@ -27,7 +27,8 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					glow: 'hsl(var(--primary-glow))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -63,6 +64,11 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				}
+			},
+			backgroundImage: {
+				'gradient-magic': 'var(--gradient-magic)',
+				'gradient-subtle': 'var(--gradient-subtle)',
+				'gradient-glow': 'var(--gradient-glow)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -124,7 +130,11 @@ export default {
 				'in': 'fade-in 0.3s ease-out',
 				'slide-in-from-bottom-2': 'slide-in-from-bottom-2 0.3s ease-out',
 				'slide-in-from-left-2': 'slide-in-from-left-2 0.3s ease-out'
-			}
+			},
+			boxShadow: {
+				'magic': 'var(--shadow-magic)',
+				'glow': 'var(--shadow-glow)'
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

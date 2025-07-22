@@ -11,9 +11,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 }
 
                 // Move draft to SendLock label and not remove from Drafts
-                await moveDraftToSendLock(messageId)
+                try{
+                    await moveDraftToSendLock(messageId)
+                } catch (error){
+                    console.log("eror")
+                }
 
                 sendResponse({ success: true, to, cc, bcc, subject, bodyHtml, bodyText, attachments });
+            } catch (error) {
+                sendResponse({ success: false, error: error.toString() });
+            }
+        })();
+        return true; // Indicates async response
+    }
+
+    if (message.type === 'Q_AUTH_TOKEN') {
+        (async () => {
+            try {
+                const qAuthToken = await getOAuthToken();
+                sendResponse({ success: true, qAuthToken });
             } catch (error) {
                 sendResponse({ success: false, error: error.toString() });
             }

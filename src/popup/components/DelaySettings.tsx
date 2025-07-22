@@ -172,7 +172,7 @@ const DelaySettings: React.FC<DelaySettingsProps> = ({
       </Card>
 
       {/* More Settings - Collapsible */}
-      <Card className="border-0 shadow-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm">
+      {/* <Card className="border-0 shadow-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm">
         <CardHeader>
           <button
             onClick={handleShowMoreToggle}
@@ -230,10 +230,10 @@ const DelaySettings: React.FC<DelaySettingsProps> = ({
             </div>
           </CardContent>
         )}
-      </Card>
+      </Card> */}
 
       {/* Minimal Tips */}
-      <Card className="border-0 shadow-sm bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border-emerald-200 dark:border-emerald-800">
+      {/* <Card className="border-0 shadow-sm bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border-emerald-200 dark:border-emerald-800">
         <CardContent className="p-6">
           <div className="flex items-start space-x-3">
             <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mt-0.5" />
@@ -247,7 +247,7 @@ const DelaySettings: React.FC<DelaySettingsProps> = ({
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 };
