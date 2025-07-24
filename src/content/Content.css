@@ -1,3 +1,6 @@
+/* ------------------------------
+   SendLock Top Bar & Branding
+--------------------------------*/
 .sendlock-bar {
   width: 100%;
   background: linear-gradient(to right, #5c36ed, #a454f7);
@@ -7,6 +10,7 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .sendlock-glow {
@@ -85,4 +89,89 @@
   height: 1px;
   background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
   z-index: 1;
+}
+
+/* --------------------------------
+   Real-Time Email Delay Indicator
+----------------------------------*/
+.counter-indicator {
+  position: absolute;
+  padding: 22px 0px;
+  bottom: 0%;
+  z-index: 100;
+  right: 4%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* gap: 12px; */
+  border-radius: 2px;
+  width: 60px;
+}
+
+.counter-indicator:hover {
+  box-shadow: 0 2px 6px rgba(27, 97, 209, 0.1);
+}
+
+.counter-indicator span {
+  font-weight: 600;
+  color: #1f2937; /* gray-800 */
+  font-size: 14px;
+}
+
+.edit-actions {
+  position: absolute;
+  top: 0%;
+  padding: 10px 0px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1b61d1;
+  border: none;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover {
+  background-color: #3775d8; /* gray-200 */
+}
+
+.button.edit {
+  font-family: "Google Sans", Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
+  font-size: 1rem;
+  color: #ffffff; /* blue-700 */
+}
+
+.button.cancel {
+  width: 105px;
+  height: 38px;
+  border-radius: 18px;
+  font-family: "Google Sans", Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: .875rem;
+  color: #ffffff; /* blue-700 */
+}
+
+/* Optional: animate indicator entry */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.counter-indicator {
+  animation: fadeInUp 0.3s ease;
 }
