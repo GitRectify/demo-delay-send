@@ -1,98 +1,115 @@
 /* ------------------------------
-   SendLock Top Bar & Branding
+  SendLock Top Bar & Branding
 --------------------------------*/
-.sendlock-bar {
+.gmail-banner {
   width: 100%;
-  background: linear-gradient(to right, #5c36ed, #a454f7);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  overflow: hidden;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
+  background: linear-gradient(135deg, #5c37ed, #a454f7);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
+  overflow: hidden;
+  color: white;
+  font-family: sans-serif;
 }
 
-.sendlock-glow {
+.gmail-banner__glow {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, #ffffff33, transparent);
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2), transparent 70%);
   opacity: 0.5;
-  animation: pulseGlow 2s infinite ease-in-out;
-  z-index: 0;
-  pointer-events: none;
+  animation: pulse 2s infinite;
 }
 
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
-}
-
-.sendlock-content {
-  width: 95%;
-  padding: 12px 12px;
+.gmail-banner__content {
+  position: relative;
+  z-index: 10;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  z-index: 1;
-}
-
-.sendlock-brand {
-  display: flex;
   align-items: center;
-  gap: 12px;
-  z-index: 1;
+  padding: 12px 24px;
+  margin: 0 auto;
 }
 
-.sendlock-brand-name span {
-  font-weight: 600;
-  font-size: 1.125rem;
-  color: #ffffff;
-}
-
-.sendlock-status {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  z-index: 1;
-}
-
-.sendlock-email-count span {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.sendlock-timer {
+.gmail-banner__brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(4px);
-  border-radius: 8px;
-  padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  z-index: 1;
 }
 
-.sendlock-timer span {
-  font-family: monospace;
-  font-size: 0.875rem;
+.gmail-banner__title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.gmail-banner__stats {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.gmail-banner__emails {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
   font-weight: 500;
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.sendlock-bottom-glow {
+.gmail-banner__timer {
+  display: flex;
+  align-items: center;
+  width: 52px;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.gmail-banner__bottom-glow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 1px;
   background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
-  z-index: 1;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  fill: none !important;
+  stroke: white;
+  color: white;
+}
+
+.pulse {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.7;
+  }
 }
 
 /* --------------------------------
-   Real-Time Email Delay Indicator
+  Real-Time Email Delay Indicator
 ----------------------------------*/
 .counter-indicator {
   position: absolute;
@@ -114,7 +131,8 @@
 
 .counter-indicator span {
   font-weight: 600;
-  color: #1f2937; /* gray-800 */
+  color: #1f2937;
+  /* gray-800 */
   font-size: 14px;
 }
 
@@ -141,13 +159,15 @@
 }
 
 .button:hover {
-  background-color: #3775d8; /* gray-200 */
+  background-color: #3775d8;
+  /* gray-200 */
 }
 
 .button.edit {
   font-family: "Google Sans", Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
   font-size: 1rem;
-  color: #ffffff; /* blue-700 */
+  color: #ffffff;
+  /* blue-700 */
 }
 
 .button.cancel {
@@ -157,7 +177,8 @@
   font-family: "Google Sans", Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
   font-weight: 500;
   font-size: .875rem;
-  color: #ffffff; /* blue-700 */
+  color: #ffffff;
+  /* blue-700 */
 }
 
 /* Optional: animate indicator entry */
@@ -166,6 +187,7 @@
     opacity: 0;
     transform: translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

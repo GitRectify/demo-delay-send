@@ -22,6 +22,7 @@ export interface DelayingEmail {
 const GmailIntegration: React.FC = () => {
   const [delayingEmails, setDelayingEmails] = useState<DelayingEmail[]>([]);
   const sendButtonObserverRef = useRef<MutationObserver | null>(null);
+  const sentLabelObserverRef = useRef<MutationObserver | null>(null);
 
   // Initialize Gmail integration
   useEffect(() => {
@@ -49,9 +50,11 @@ const GmailIntegration: React.FC = () => {
     }, 100);
 
     sendButtonObserverRef.current = observeSendButtons();
+    sentLabelObserverRef.current = insertSendLockAboveSent();
 
     return () => {
       sendButtonObserverRef.current?.disconnect();
+      sentLabelObserverRef.current?.disconnect();
       clearInterval(updaterDelayingEmails)
     };
   }, []);
@@ -89,6 +92,48 @@ const GmailIntegration: React.FC = () => {
     observer.observe(document.body, { childList: true, subtree: true });
     return observer;
   };
+
+  const insertSendLockAboveSent = (): MutationObserver => {
+    const observer = new MutationObserver(() => {
+      // Find the anchor/link to the Sent label
+      const sentLink = document.querySelector('a[href*="#sent"]');
+      if (!sentLink) return;
+      // Check if already inserted
+      if (document.getElementById("sendlock-sidebar-btn")) return;
+
+      // Go up to the container that wraps the Sent label block
+      const sentContainer = sentLink.closest('.TO');
+      if (!sentContainer || !sentContainer.parentElement) return;
+
+      // Create the SendLock button
+      const sendLockBtn = document.createElement("button");
+      sendLockBtn.id = "sendlock-sidebar-btn";
+      sendLockBtn.innerHTML = '<span style="margin-right: 18px;">🔒</span>SendLock';
+      sendLockBtn.style.cssText = `
+        display: block;
+        width: 100%;
+        padding: 8px 12px 8px 26px;
+        background-color: #1a73e8;
+        font-weight: bold;
+        font-family: "Google Sans", Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
+        font-size: .875rem;
+        letter-spacing: normal;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: left;
+      `;
+
+      sendLockBtn.onclick = sendLockBtn.onmouseup = () => { window.location.href = "https://mail.google.com/mail/u/0/#label/SendLock"; };
+
+      // Insert the button right before the "Sent" container
+      sentContainer.parentElement.insertBefore(sendLockBtn, sentContainer);
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+    return observer;
+  }
 
   const attachDelayHandler = (parentCompose: HTMLElement, sendButton: HTMLElement) => {
     const sendLockHandler = (e: Event) => {
