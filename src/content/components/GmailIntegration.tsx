@@ -22,7 +22,6 @@ export interface DelayingEmail {
 const GmailIntegration: React.FC = () => {
   const [delayingEmails, setDelayingEmails] = useState<DelayingEmail[]>([]);
   const sendButtonObserverRef = useRef<MutationObserver | null>(null);
-  const notificationObserverRef = useRef<MutationObserver | null>(null);
 
   // Initialize Gmail integration
   useEffect(() => {
@@ -50,11 +49,9 @@ const GmailIntegration: React.FC = () => {
     }, 100);
 
     sendButtonObserverRef.current = observeSendButtons();
-    notificationObserverRef.current = observeGmailHeader();
 
     return () => {
       sendButtonObserverRef.current?.disconnect();
-      notificationObserverRef.current?.disconnect();
       clearInterval(updaterDelayingEmails)
     };
   }, []);
@@ -91,39 +88,6 @@ const GmailIntegration: React.FC = () => {
 
     observer.observe(document.body, { childList: true, subtree: true });
     return observer;
-  };
-
-  const observeGmailHeader = (): MutationObserver => {
-    const observer = new MutationObserver(() => {
-      const topRight = document.querySelector("div.gb_a.gb_qd");
-      if (topRight && !document.getElementById("sendlock-banner-root")) {
-        injectAfterGmailTopRight();
-      }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-    return observer;
-  };
-
-  const injectAfterGmailTopRight = () => {
-    const target = document.querySelector("div.gb_a.gb_qd");
-    if (!target || document.getElementById("sendlock-banner-root")) return;
-
-    const wrapper = document.createElement("div");
-    wrapper.id = "sendlock-banner-root";
-
-    wrapper.style.cursor = "pointer";
-
-    // Click to open SendLock folder
-    wrapper.onclick = () => {
-      window.location.href = "https://mail.google.com/mail/u/0/#label/SendLock";
-    };
-
-    wrapper.onmouseup = () => {
-      window.location.href = "https://mail.google.com/mail/u/0/#label/SendLock";
-    }
-
-    target.parentNode.insertBefore(wrapper, target.nextSibling);
   };
 
   const attachDelayHandler = (parentCompose: HTMLElement, sendButton: HTMLElement) => {
@@ -270,24 +234,6 @@ const GmailIntegration: React.FC = () => {
           }
         }
       );
-      // // Remove our handler so we don't intercept our own send
-      // if (email.noopClickHandler) {
-      //   email.originalButton.removeEventListener("click", email.noopClickHandler, true);
-      //   email.originalButton.removeEventListener("keydown", email.noopClickHandler, true);
-      // }
-      // delete email.originalButton.dataset.emailMagicHandled;
-
-      // // Dispatch a real click event
-      // const clickEvent = new MouseEvent("click", {
-      //   bubbles: true,
-      //   cancelable: true,
-      //   view: window,
-      // });
-      // email.originalButton.dispatchEvent(clickEvent);
-
-      // email.originalButton.innerText = "Send";
-
-      // Stats, etc...
     } catch (error) {
       console.error("[Email Magic: SendLock] Error sending email:", error);
     }
@@ -335,33 +281,9 @@ const GmailIntegration: React.FC = () => {
     }
   };
 
-  // const element = document.getElementById("sendlock-banner-root")
-  // const rect = element.getBoundingClientRect()
-
-  // Wait for container injected by content script
-  const interval = setInterval(() => {
-    const container = document.getElementById("sendlock-banner-root");
-    if (container) {
-      const root = ReactDOM.createRoot(container);
-      // root.render(<NotificationBanner emailCount={1}/>);
-      root.render(
-        <NotificationBanner
-          emailCount={delayingEmails.length}
-          delayTime={
-            delayingEmails.length
-              ? Math.ceil(
-                  delayingEmails[delayingEmails.length - 1].remainingTime
-                )
-              : 0
-          }
-        />
-      );
-      clearInterval(interval);
-    }
-  }, 500);
-
   return (
     <>
+      <NotificationBanner emails={delayingEmails} />
       <ComposeOverlaysPortal
         emails={delayingEmails}
         onCancel={cancelEmail}

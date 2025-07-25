@@ -1,87 +1,78 @@
-import { useState, useEffect } from "react";
-import { Clock, Mail, Pointer, Sparkles } from "lucide-react";
-
+import ReactDOM from 'react-dom';
+import { useEffect, useRef } from "react";
 import "../Content.css";
+import { DelayingEmail } from './GmailIntegration';
+
+export const formatTime = (time: number) => {
+    const hour = Math.floor(time / 3600);
+    const min = Math.floor((time % 3600) / 60);
+    const sec = Math.floor(time % 60);
+    return `${hour ? `${hour}:` : ''}${min ? `${min}:` : ''}${(hour || min) ? `${sec.toString().padStart(2, '0')}` : `${sec}s`}`;
+};
 
 interface NotificationBannerProps {
-    emailCount?: number;
-    delayTime?: number;
-    isActive?: boolean;
+    emails: DelayingEmail[];
 }
 
-const NotificationBanner = ({
-    emailCount = 3,
-    delayTime = 60,
-    isActive = true,
-}: NotificationBannerProps) => {
-    const [timeLeft, setTimeLeft] = useState({ minutes: 15, seconds: 30 });
+const NotificationBanner = ({ emails }: NotificationBannerProps) => {
+    const notificatorRef = useRef<HTMLElement | null>(null);
 
+    // Ensure portal container is injected when emails are available
     useEffect(() => {
-        if (!isActive) return;
+        if (!emails.length) return; // Optional: skip if no emails
 
-        const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-            if (prev.seconds > 0) {
-            return { ...prev, seconds: prev.seconds - 1 };
-            } else if (prev.minutes > 0) {
-            return { minutes: prev.minutes - 1, seconds: 59 };
+        const interval = setInterval(() => {
+            const gmailHeader = document.querySelector("div.gb_a.gb_qd");
+            if (!gmailHeader) return;
+            let notificator = document.getElementById("sendlock-banner-root") as HTMLElement | null;
+            if (!notificator) {
+                notificator = document.createElement("div");
+                notificator.id = "sendlock-banner-root";
+                notificator.style.cursor = "pointer";
+                notificator.onclick = notificator.onmouseup = () => {
+                    window.location.href = "https://mail.google.com/mail/u/0/#label/SendLock";
+                };
+                gmailHeader.parentNode?.insertBefore(notificator, gmailHeader.nextSibling);
             }
-            return prev;
-        });
-        }, 1000);
+            notificatorRef.current = notificator;
+            clearInterval(interval); // ✅ Only clear if header found and appended
+        }, 300);
+        return () => clearInterval(interval); // Always clear on unmount
+    }, [emails.length]);
 
-        return () => clearInterval(timer);
-    }, [isActive]);
+    if (!emails.length || !notificatorRef.current) return null;
 
-    if (!isActive) return null;
+    const latestEmail = emails[emails.length - 1];
 
-    return (
-        <>
-        {emailCount ? (
-            <div className="sendlock-bar">
+    return ReactDOM.createPortal(
+        <div className="sendlock-bar">
             {/* Animated background glow */}
             <div className="sendlock-glow" />
-
             {/* Main content */}
             <div className="sendlock-content">
                 {/* Left side - Brand */}
                 <div className="sendlock-brand">
-                <div className="sendlock-brand-name">
-                    <span>Email Magic: SendLock</span>
+                    <div className="sendlock-brand-name">
+                        <span>Email Magic: SendLock</span>
+                    </div>
                 </div>
-                </div>
-
                 {/* Right side - Stats and Timer */}
                 <div className="sendlock-status">
-                {/* Email count */}
-                <div className="sendlock-email-count">
-                    <span>
-                    {emailCount} email{emailCount !== 1 ? "s" : ""} queued
-                    </span>
-                </div>
-
-                {/* Timer */}
-                <div className="sendlock-timer">
-                    <span>{formatTime(delayTime)}</span>
-                </div>
+                    {/* Email count */}
+                    <div className="sendlock-email-count">
+                        <span>{emails.length} email{emails.length !== 1 ? "s" : ""} queued</span>
+                    </div>
+                    {/* Timer */}
+                    <div className="sendlock-timer">
+                        <span>{formatTime(latestEmail.remainingTime)}</span>
+                    </div>
                 </div>
             </div>
-
             {/* Subtle bottom border glow */}
             <div className="sendlock-bottom-glow" />
-            </div>
-        ) : null}
-        </>
+        </div>,
+        notificatorRef.current
     );
 };
 
 export default NotificationBanner;
-
-
-export const formatTime = (time: number) => {
-    const hour = parseInt((time / 3600).toString())
-    const min = parseInt((time / 60).toString())
-    const sec = parseInt((time % 60).toString())
-
-    return `${hour ? `${hour}:`: ''}${min ? `${min}:`: ''}${(hour || min) ? `${sec.toString().padStart(2, '0')}`: `${sec}s`}`;
-};
